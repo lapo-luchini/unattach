@@ -36,7 +36,7 @@
       <Menu fx:id="donationCurrencyMenu" text="Donation currency" />
     </Menu>
     <Menu text="Help">
-      <MenuItem text="Tutorial Video" onAction="#onTutorialVideoButtonPressed"/>
+      <MenuItem text="Demo Video" onAction="#onDemoVideoButtonPressed"/>
       <MenuItem text="Give feedback" onAction="#onFeedbackMenuItemPressed"/>
       <MenuItem text="Open log file" onAction="#onOpenLogMenuItemPressed"/>
       <MenuItem text="About" onAction="#onAboutButtonPressed"/>

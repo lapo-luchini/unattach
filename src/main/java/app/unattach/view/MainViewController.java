@@ -730,8 +730,8 @@ public class MainViewController {
   }
 
   @FXML
-  private void onTutorialVideoButtonPressed() {
-    controller.openWebPage(Constants.TUTORIAL_VIDEO_URL);
+  private void onDemoVideoButtonPressed() {
+    controller.openWebPage(Constants.DEMO_VIDEO_URL);
   }
 
   @FXML
