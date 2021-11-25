@@ -16,6 +16,7 @@ public class BaseConfig implements Config {
   private static final String LABEL_IDS_PROPERTY = "label_ids";
   private static final String PROCESS_EMBEDDED_PROPERTY = "process_embedded";
   private static final String REMOVED_LABEL_ID_PROPERTY = "removed_label_id";
+  private static final String RESIZE_IMAGES_PROPERTY = "resize_images";
   private static final String SEARCH_QUERY_PROPERTY = "search_query";
   private static final String SIGN_IN_AUTOMATICALLY_PROPERTY = "sign_in_automatically";
   private static final String SUBSCRIBE_TO_UPDATES_PROPERTY = "subscribe_to_updates";
@@ -30,6 +31,7 @@ public class BaseConfig implements Config {
       LABEL_IDS_PROPERTY,
       PROCESS_EMBEDDED_PROPERTY,
       REMOVED_LABEL_ID_PROPERTY,
+      RESIZE_IMAGES_PROPERTY,
       SEARCH_QUERY_PROPERTY,
       SIGN_IN_AUTOMATICALLY_PROPERTY,
       SUBSCRIBE_TO_UPDATES_PROPERTY,
@@ -93,6 +95,11 @@ public class BaseConfig implements Config {
   }
 
   @Override
+  public boolean getResizeImages() {
+    return Boolean.parseBoolean(config.getProperty(RESIZE_IMAGES_PROPERTY, "false"));
+  }
+
+  @Override
   public String getSearchQuery() {
     return config.getProperty(SEARCH_QUERY_PROPERTY, "has:attachment size:1m");
   }
@@ -145,6 +152,12 @@ public class BaseConfig implements Config {
   @Override
   public void saveRemovedLabelId(String removedLabelId) {
     config.setProperty(REMOVED_LABEL_ID_PROPERTY, removedLabelId);
+    saveConfig();
+  }
+
+  @Override
+  public void saveResizeImages(boolean resizeImages) {
+    config.setProperty(RESIZE_IMAGES_PROPERTY, Boolean.toString(resizeImages));
     saveConfig();
   }
 

@@ -38,8 +38,9 @@ public class OfflineProcessor {
       int sizeInBytes = mimeMessage.getSize();
       List<String> knownAttachments = List.of();
       Email email = new Email(gmailId, labels, from, to, subject, timestamp, sizeInBytes, knownAttachments);
-      ProcessOption processOption = new ProcessOption(Action.DOWNLOAD_AND_REMOVE, true, true,
-          false, Constants.DEFAULT_DOWNLOADED_LABEL_NAME, Constants.DEFAULT_REMOVED_LABEL_NAME);
+      ProcessOption processOption = new ProcessOption(Action.DOWNLOAD_AND_REMOVE, true,
+          true, true, false, Constants.DEFAULT_DOWNLOADED_LABEL_NAME,
+          Constants.DEFAULT_REMOVED_LABEL_NAME);
       File targetDirectory = emlFile.getParentFile();
       String filenameSchema = FilenameFactory.DEFAULT_SCHEMA;
       SortedMap<String, String> idToLabel = Collections.emptySortedMap();

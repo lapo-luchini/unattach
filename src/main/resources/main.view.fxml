@@ -24,6 +24,8 @@
       <Menu fx:id="dateFormatMenu" text="Date Format"/>
       <CheckMenuItem fx:id="processEmbeddedCheckMenuItem" text="Process embedded attachments"
                      onAction="#onProcessEmbeddedCheckMenuItemPressed" />
+      <CheckMenuItem fx:id="resizeImagesCheckMenuItem" text="After removing an image, insert a smaller version"
+                     onAction="#onResizeImagesCheckMenuItemPressed" />
       <CheckMenuItem fx:id="addMetadataCheckMenuItem" text="Add metadata about removed attachments" selected="true" />
       <Menu text="After inserting email copy without attachments..." >
         <CheckMenuItem fx:id="permanentlyRemoveOriginalMenuItem" text="Permanently remove original email" selected="true"

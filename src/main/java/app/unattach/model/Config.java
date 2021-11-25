@@ -13,6 +13,7 @@ public interface Config {
   String getDownloadedLabelId();
   boolean getProcessEmbedded();
   String getRemovedLabelId();
+  boolean getResizeImages();
   String getSearchQuery();
   boolean getSignInAutomatically();
   boolean getSubscribeToUpdates();
@@ -25,6 +26,7 @@ public interface Config {
   void saveLabelIds(List<String> labelIds);
   void saveProcessEmbedded(boolean processEmbedded);
   void saveRemovedLabelId(String removedLabelId);
+  void saveResizeImages(boolean resizeImages);
   void saveSearchQuery(String query);
   void saveSignInAutomatically(boolean signInAutomatically);
   void saveSubscribeToUpdates(boolean subscribeToUpdates);

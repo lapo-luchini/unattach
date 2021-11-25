@@ -1,18 +1,22 @@
 package app.unattach.model;
 
 import app.unattach.model.attachmentstorage.UserStorage;
+import app.unattach.utils.InputStreamDataSource;
 import app.unattach.utils.Logger;
+import org.codehaus.plexus.util.FileUtils;
+import org.imgscalr.Scalr;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
+import javax.activation.DataHandler;
+import javax.imageio.ImageIO;
 import javax.mail.*;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimeUtility;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -34,6 +38,7 @@ public class EmailProcessor {
   private final List<Part> detectedAttachmentParts;
   private final Set<String> originalAttachmentNames;
   private final Map<String, String> originalToNormalizedFilename;
+  private final Set<String> resizedImageNames;
   private Part mainTextPart;
   private Part mainHtmlPart;
 
@@ -48,6 +53,7 @@ public class EmailProcessor {
     detectedAttachmentParts = new LinkedList<>();
     originalAttachmentNames = new TreeSet<>();
     originalToNormalizedFilename = new TreeMap<>();
+    resizedImageNames = new TreeSet<>();
   }
 
   private Set<String> getUnattachLabelIds(ProcessSettings processSettings) {
@@ -138,6 +144,7 @@ public class EmailProcessor {
     }
     originalAttachmentNames.add(originalFilename);
     detectedAttachmentParts.add(part);
+
     String normalizedFilename = filenameFactory.getFilename(email, fileCounter++, originalFilename);
     originalToNormalizedFilename.put(originalFilename, normalizedFilename);
     if (processSettings.processOption().shouldDownload()) {
@@ -184,8 +191,46 @@ public class EmailProcessor {
     }
     for (Part part : detectedAttachmentParts) {
       if (part instanceof BodyPart bodyPart) {
-        bodyPart.getParent().removeBodyPart(bodyPart);
+        Multipart parent = bodyPart.getParent();
+        parent.removeBodyPart(bodyPart);
+        if (processSettings.processOption().shouldResizeImages()) {
+          insertResizedImage(parent, part);
+        }
       }
+    }
+  }
+
+  private void insertResizedImage(Multipart parent, Part part) throws MessagingException {
+    try {
+      String filename = getFilename(part);
+      if (filename == null) {
+        return;
+      }
+      final Set<String> SUPPORTED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "tiff", "tif");
+      String extension = FileUtils.getExtension(filename);
+      if (!SUPPORTED_IMAGE_EXTENSIONS.contains(extension.toLowerCase())) {
+        return;
+      }
+      logger.info("Resizing image %s...", filename);
+      MimeBodyPart newPart = new MimeBodyPart();
+      BufferedImage originalImage = ImageIO.read(part.getInputStream());
+      BufferedImage resizedImage = Scalr.resize(originalImage, Scalr.Method.QUALITY, Scalr.Mode.AUTOMATIC,
+          500, 500, Scalr.OP_ANTIALIAS);
+      ByteArrayOutputStream imageOutputStream = new ByteArrayOutputStream();
+      ImageIO.write(resizedImage, extension, imageOutputStream);
+      ByteArrayInputStream imageInputStream = new ByteArrayInputStream(imageOutputStream.toByteArray());
+      newPart.setDataHandler(new DataHandler(new InputStreamDataSource(imageInputStream)));
+      newPart.setFileName(part.getFileName());
+      Enumeration<Header> headers = part.getAllHeaders();
+      while (headers.hasMoreElements()) {
+        Header header = headers.nextElement();
+        newPart.addHeader(header.getName(), header.getValue());
+      }
+      newPart.setDisposition(part.getDisposition());
+      parent.addBodyPart(newPart);
+      resizedImageNames.add(filename);
+    } catch (IOException e) {
+      logger.error("Failed to insert resized image.", e);
     }
   }
 
@@ -246,12 +291,12 @@ public class EmailProcessor {
     String hostname = getHostname();
     if (mainTextPart != null) {
       String text = mainTextPart.getContent().toString();
-      String newText = generateTextSuffix(text, originalToNormalizedFilename, dateTimeString, hostname);
+      String newText = generateTextSuffix(text, dateTimeString, hostname);
       mainTextPart.setContent(newText, "text/plain; charset=utf-8");
     }
     if (mainHtmlPart != null) {
       String html = mainHtmlPart.getContent().toString();
-      String newHtml = generateHtmlSuffix(html, originalToNormalizedFilename, dateTimeString, hostname);
+      String newHtml = generateHtmlSuffix(html, dateTimeString, hostname);
       mainHtmlPart.setContent(newHtml, "text/html; charset=utf-8");
     }
   }
@@ -264,16 +309,17 @@ public class EmailProcessor {
     }
   }
 
-  private String generateTextSuffix(String text, Map<String, String> originalToNormalizedFilename,
-                                    String dateTimeString, String hostname) {
+  private String generateTextSuffix(String text, String dateTimeString, String hostname) {
     StringBuilder newText = new StringBuilder(text);
     newText.append("\n\n\n");
     newText.append("=========================================\n");
-    newText.append("Previous attachments:\n");
+    newText.append("Removed/modified attachments:\n");
     for (Map.Entry<String, String> entry : originalToNormalizedFilename.entrySet()) {
       String originalFilename = entry.getKey();
       String normalizedFilename = entry.getValue();
-      newText.append(" - ").append(originalFilename);
+      newText.append(" - ");
+      newText.append(resizedImageNames.contains(originalFilename) ? "resized" : "removed").append(" ");
+      newText.append(originalFilename);
       if (processSettings.processOption().shouldDownload()) {
         newText.append(" (filename: ").append(normalizedFilename).append(")");
       }
@@ -290,14 +336,14 @@ public class EmailProcessor {
     return newText.toString();
   }
 
-  private String generateHtmlSuffix(String html, Map<String, String> originalToNormalizedFilename,
-                                    String dateTimeString, String hostname) {
-    StringBuilder suffix = new StringBuilder("<hr /><p>Previous attachments:<ul>\n");
+  private String generateHtmlSuffix(String html, String dateTimeString, String hostname) {
+    StringBuilder suffix = new StringBuilder("<hr /><p>Removed/modified attachments:<ul>\n");
     String targetDirectoryAbsolutePath = processSettings.targetDirectory().getAbsolutePath();
     for (Map.Entry<String, String> entry : originalToNormalizedFilename.entrySet()) {
       String originalFilename = entry.getKey();
       String normalizedFilename = entry.getValue();
       suffix.append("<li>");
+      suffix.append(resizedImageNames.contains(originalFilename) ? "resized" : "removed").append(" ");
       suffix.append(originalFilename);
       if (processSettings.processOption().shouldDownload()) {
         suffix.append(" (");
