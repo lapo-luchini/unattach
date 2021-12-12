@@ -3,6 +3,7 @@ package app.unattach.model;
 import app.unattach.model.attachmentstorage.UserStorage;
 import app.unattach.utils.InputStreamDataSource;
 import app.unattach.utils.Logger;
+import org.apache.commons.io.input.CountingInputStream;
 import org.codehaus.plexus.util.FileUtils;
 import org.imgscalr.Scalr;
 import org.jsoup.Jsoup;
@@ -213,10 +214,10 @@ public class EmailProcessor {
       }
       logger.info("Attempting to resize the image named %s...", filename);
       MimeBodyPart newPart = new MimeBodyPart();
-      InputStream currentImageInputStream = part.getInputStream();
-      final int currentImageSize = part.getSize();
-      logger.info("The estimated size of the current image is %d bytes.", currentImageSize);
+      CountingInputStream currentImageInputStream = new CountingInputStream(part.getInputStream());
       BufferedImage currentImage = ImageIO.read(currentImageInputStream);
+      final int currentImageSize = currentImageInputStream.getCount();
+      logger.info("The size of the current image is %d bytes.", currentImageSize);
       final int maxTargetWidth = 500, maxTargetHeight = 500;
       if (currentImage.getWidth() <= maxTargetWidth || currentImage.getHeight() <= maxTargetHeight) {
         logger.info("The current image already smaller than the target dimensions. Skipping.");
