@@ -207,19 +207,33 @@ public class EmailProcessor {
         return;
       }
       final Set<String> SUPPORTED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "tiff", "tif");
-      String extension = FileUtils.getExtension(filename);
-      if (!SUPPORTED_IMAGE_EXTENSIONS.contains(extension.toLowerCase())) {
+      String fileExtension = FileUtils.getExtension(filename);
+      if (!SUPPORTED_IMAGE_EXTENSIONS.contains(fileExtension.toLowerCase())) {
         return;
       }
-      logger.info("Resizing image %s...", filename);
+      logger.info("Attempting to resize the image named %s...", filename);
       MimeBodyPart newPart = new MimeBodyPart();
-      BufferedImage originalImage = ImageIO.read(part.getInputStream());
-      BufferedImage resizedImage = Scalr.resize(originalImage, Scalr.Method.QUALITY, Scalr.Mode.AUTOMATIC,
-          500, 500, Scalr.OP_ANTIALIAS);
-      ByteArrayOutputStream imageOutputStream = new ByteArrayOutputStream();
-      ImageIO.write(resizedImage, extension, imageOutputStream);
-      ByteArrayInputStream imageInputStream = new ByteArrayInputStream(imageOutputStream.toByteArray());
-      newPart.setDataHandler(new DataHandler(new InputStreamDataSource(imageInputStream)));
+      InputStream currentImageInputStream = part.getInputStream();
+      final int currentImageSize = part.getSize();
+      logger.info("The estimated size of the current image is %d bytes.", currentImageSize);
+      BufferedImage currentImage = ImageIO.read(currentImageInputStream);
+      final int maxTargetWidth = 500, maxTargetHeight = 500;
+      if (currentImage.getWidth() <= maxTargetWidth || currentImage.getHeight() <= maxTargetHeight) {
+        logger.info("The current image already smaller than the target dimensions. Skipping.");
+        return;
+      }
+      BufferedImage resizedImage = Scalr.resize(currentImage, Scalr.Method.QUALITY, Scalr.Mode.AUTOMATIC,
+          maxTargetWidth, maxTargetHeight, Scalr.OP_ANTIALIAS);
+      ByteArrayOutputStream resizedImageOutputStream = new ByteArrayOutputStream();
+      ImageIO.write(resizedImage, fileExtension, resizedImageOutputStream);
+      final int resizedImageSize = resizedImageOutputStream.size();
+      if (resizedImageSize >= currentImageSize) {
+        logger.info("The resized image is larger than the current image. Skipping.");
+        return;
+      }
+      logger.info("The size of the resized image is %d bytes.", resizedImageSize);
+      ByteArrayInputStream resizedImageInputStream = new ByteArrayInputStream(resizedImageOutputStream.toByteArray());
+      newPart.setDataHandler(new DataHandler(new InputStreamDataSource(resizedImageInputStream)));
       newPart.setFileName(part.getFileName());
       Enumeration<Header> headers = part.getAllHeaders();
       while (headers.hasMoreElements()) {
@@ -230,7 +244,7 @@ public class EmailProcessor {
       parent.addBodyPart(newPart);
       resizedImageNames.add(filename);
     } catch (IOException e) {
-      logger.error("Failed to insert resized image.", e);
+      logger.error("Failed to resize an image.", e);
     }
   }
 

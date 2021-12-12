@@ -161,8 +161,7 @@ public class MainViewController {
     if (!controller.getConfig().getRemoveOriginal()) {
       onTrashOriginalMenuItemPressed();
     }
-    List<CheckMenuItem> currencyMenuItems =
-            Arrays.stream(Constants.CURRENCIES).map(CheckMenuItem::new).collect(Collectors.toList());
+    List<CheckMenuItem> currencyMenuItems = Arrays.stream(Constants.CURRENCIES).map(CheckMenuItem::new).toList();
     currencyMenuItems.forEach(menuItem -> menuItem.setOnAction(this::onDonationCurrencySelected));
     donationCurrencyMenu.getItems().addAll(currencyMenuItems);
     //noinspection CodeBlock2Expr
