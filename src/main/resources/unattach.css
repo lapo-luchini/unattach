@@ -1,6 +1,9 @@
+.root{
+  -fx-font-family: "Helvetica";
+}
+
 #welcomeText {
   -fx-font-size: 24px;
-  -fx-font-family: "Arial Black";
   -fx-fill: #818181;
   -fx-effect: innershadow( three-pass-box , rgba(0,0,0,0.7) , 6, 0.0 , 0 , 2 );
 }
