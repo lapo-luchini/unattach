@@ -10,6 +10,8 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.Observable;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -18,12 +20,12 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 
@@ -92,6 +94,9 @@ public class MainViewController {
   private Label labelsListViewLabel;
   @FXML
   private ListView<GmailLabel> labelsListView;
+  private final Map<GmailLabel, SimpleBooleanProperty> labelListSelected = new HashMap<>();
+  @FXML
+  private TextField basicSearchQueryPreviewTextField;
   @FXML
   private TextField searchQueryTextField;
   @FXML
@@ -189,15 +194,17 @@ public class MainViewController {
     labelsListViewLabel.setText("""
         Your Gmail labels (optional):
         - Each result will have at least one selected label.
-        - Select no labels to ignore this filter.
-        - %s-click on a label to unselect it.""".formatted(SystemUtils.IS_OS_MAC ? "⌘" : "Ctrl"));
+        - Select no labels to ignore this filter.""");
     labelsListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     List<GmailLabel> labels = controller.getIdToLabel().entrySet().stream()
         .map(e -> new GmailLabel(e.getKey(), e.getValue())).sorted(Comparator.comparing(GmailLabel::name))
         .collect(Collectors.toList());
-    labelsListView.setItems(FXCollections.observableList(labels));
+    labels.forEach(label -> labelListSelected.put(label, new SimpleBooleanProperty(false)));
+    labelListSelected.values().forEach(booleanProperty -> booleanProperty.addListener(this::onLabelSelectionChanged));
+    labelsListView.getItems().addAll(labels);
+    labelsListView.setCellFactory(CheckBoxListCell.forListView(labelListSelected::get));
     selectSavedLabels(labels);
-    saveLabelsOnChange();
+    basicSearchQueryPreviewTextField.setText(getBasicSearchQuery());
     resultsTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     enableScheduleCheckBox.selectedProperty()
         .addListener((checkBox, previous, current) -> onEnableScheduleCheckBoxChange());
@@ -249,15 +256,15 @@ public class MainViewController {
   private void selectSavedLabels(List<GmailLabel> labels) {
     Map<String, GmailLabel> idToIdLabel = labels.stream().collect(Collectors.toMap(GmailLabel::id, Function.identity()));
     controller.getConfig().getLabelIds().stream().map(idToIdLabel::get).filter(Objects::nonNull).
-        forEach(labelsListView.getSelectionModel()::select);
+        forEach(label -> labelListSelected.get(label).setValue(true));
   }
 
-  private void saveLabelsOnChange() {
-    labelsListView.getSelectionModel().getSelectedItems().addListener((ListChangeListener<GmailLabel>) change -> {
-      List<String> labelIds = labelsListView.getSelectionModel().getSelectedItems()
-          .stream().map(GmailLabel::id).collect(Collectors.toList());
-      controller.getConfig().saveLabelIds(labelIds);
-    });
+  private void onLabelSelectionChanged(ObservableValue<? extends Boolean> observableValue, Boolean oldValue,
+                                       Boolean newValue) {
+    List<String> labelIds = labelsListView.getItems().stream().filter(label -> labelListSelected.get(label).get())
+        .map(GmailLabel::id).collect(Collectors.toList());
+    controller.getConfig().saveLabelIds(labelIds);
+    basicSearchQueryPreviewTextField.setText(getBasicSearchQuery());
   }
 
   private Vector<ComboItem<Integer>> getEmailSizeOptions() {
@@ -432,20 +439,26 @@ public class MainViewController {
   }
 
   private String getQuery() {
-    StringBuilder query = new StringBuilder();
     if (basicSearchTab.isSelected()) {
-      int minEmailSizeInMb = emailSizeComboBox.getSelectionModel().getSelectedItem().value();
-      query.append(String.format("has:attachment size:%dm", minEmailSizeInMb));
-      ObservableList<GmailLabel> labels = labelsListView.getSelectionModel().getSelectedItems();
-      if (!labels.isEmpty()) {
-        query.append(" {");
-        query.append(labels.stream().map(label -> String.format("label:\"%s\"", label.name()))
-                .collect(Collectors.joining(" ")));
-        query.append("}");
-      }
+      return getBasicSearchQuery();
     } else {
-      query = new StringBuilder(searchQueryTextField.getText());
-      controller.getConfig().saveSearchQuery(searchQueryTextField.getText());
+      String query = searchQueryTextField.getText();
+      controller.getConfig().saveSearchQuery(query);
+      return query;
+    }
+  }
+
+  private String getBasicSearchQuery() {
+    StringBuilder query = new StringBuilder();
+    int minEmailSizeInMb = emailSizeComboBox.getSelectionModel().getSelectedItem().value();
+    query.append(String.format("has:attachment size:%dm", minEmailSizeInMb));
+    List<GmailLabel> labels = labelsListView.getItems().stream()
+        .filter(label -> labelListSelected.get(label).get()).toList();
+    if (!labels.isEmpty()) {
+      query.append(" {");
+      query.append(labels.stream().map(label -> String.format("label:\"%s\"", label.name()))
+          .collect(Collectors.joining(" ")));
+      query.append("}");
     }
     return query.toString();
   }
@@ -747,6 +760,7 @@ public class MainViewController {
   @FXML
   private void onEmailSizeComboBoxChanged() {
     controller.getConfig().saveEmailSize(emailSizeComboBox.getValue().value());
+    basicSearchQueryPreviewTextField.setText(getBasicSearchQuery());
   }
 
   @FXML
