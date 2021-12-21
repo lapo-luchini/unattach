@@ -41,11 +41,11 @@ public interface GmailService {
   }
 
   static SortedMap<String, String> labelsResponseToMap(ListLabelsResponse response) {
-    SortedMap<String, String> labelToId = new TreeMap<>();
+    SortedMap<String, String> labelIdToName = new TreeMap<>();
     for (Label label : response.getLabels()) {
-      labelToId.put(label.getId(), label.getName());
+      labelIdToName.put(label.getId(), label.getName());
     }
-    return labelToId;
+    return labelIdToName;
   }
 
   static MimeMessage getMimeMessage(Message message) throws MessagingException, IOException {
