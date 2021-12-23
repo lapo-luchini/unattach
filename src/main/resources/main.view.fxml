@@ -55,7 +55,7 @@
 
   <SubView text="Search" maxHeight="Infinity" maxWidth="Infinity">
     <VBox spacing="10">
-      <TabPane styleClass="search-tab">
+      <TabPane fx:id="searchTabPane" styleClass="search-tab">
         <Tab fx:id="basicSearchTab" text="Basic" closable="false">
           <GridPane vgap="10" hgap="10">
             <padding>

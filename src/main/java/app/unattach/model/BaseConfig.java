@@ -18,6 +18,7 @@ public class BaseConfig implements Config {
   private static final String REMOVED_LABEL_ID_PROPERTY = "removed_label_id";
   private static final String RESIZE_IMAGES_PROPERTY = "resize_images";
   private static final String SEARCH_QUERY_PROPERTY = "search_query";
+  private static final String SELECTED_SEARCH_TAB_PROPERTY = "selected_search_tab";
   private static final String SIGN_IN_AUTOMATICALLY_PROPERTY = "sign_in_automatically";
   private static final String SUBSCRIBE_TO_UPDATES_PROPERTY = "subscribe_to_updates";
   private static final String TARGET_DIRECTORY_PROPERTY = "target_directory";
@@ -33,6 +34,7 @@ public class BaseConfig implements Config {
       REMOVED_LABEL_ID_PROPERTY,
       RESIZE_IMAGES_PROPERTY,
       SEARCH_QUERY_PROPERTY,
+      SELECTED_SEARCH_TAB_PROPERTY,
       SIGN_IN_AUTOMATICALLY_PROPERTY,
       SUBSCRIBE_TO_UPDATES_PROPERTY,
       TARGET_DIRECTORY_PROPERTY
@@ -105,6 +107,11 @@ public class BaseConfig implements Config {
   }
 
   @Override
+  public String getSelectedSearchTab() {
+    return config.getProperty(SELECTED_SEARCH_TAB_PROPERTY);
+  }
+
+  @Override
   public boolean getSignInAutomatically() {
     return Boolean.parseBoolean(config.getProperty(SIGN_IN_AUTOMATICALLY_PROPERTY, "false"));
   }
@@ -164,6 +171,12 @@ public class BaseConfig implements Config {
   @Override
   public void saveSearchQuery(String query) {
     config.setProperty(SEARCH_QUERY_PROPERTY, query);
+    saveConfig();
+  }
+
+  @Override
+  public void saveSelectedSearchTab(String selectedSearchTab) {
+    config.setProperty(SELECTED_SEARCH_TAB_PROPERTY, selectedSearchTab);
     saveConfig();
   }
 

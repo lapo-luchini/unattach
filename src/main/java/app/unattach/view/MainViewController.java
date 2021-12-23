@@ -87,6 +87,8 @@ public class MainViewController {
 
   // Search view
   @FXML
+  private TabPane searchTabPane;
+  @FXML
   private Tab basicSearchTab;
   @FXML
   private ComboBox<ComboItem<Integer>> emailSizeComboBox;
@@ -175,6 +177,12 @@ public class MainViewController {
               .forEach(menuItem -> {menuItem.setSelected(true); menuItem.fire();});
     });
     donateMenu.setGraphic(new Label()); // This enables the CSS style for the menu.
+    String selectedSearchTab = controller.getConfig().getSelectedSearchTab();
+    searchTabPane.getTabs().stream().filter(tab -> tab.getText().equals(selectedSearchTab)).findFirst()
+        .ifPresent(tab -> searchTabPane.getSelectionModel().select(tab));
+    searchTabPane.getSelectionModel().selectedItemProperty().addListener(
+        (selectedTabProperty, previousTab, newTab) -> controller.getConfig().saveSelectedSearchTab(newTab.getText())
+    );
     emailSizeComboBox.setItems(FXCollections.observableList(getEmailSizeOptions()));
     int emailSize = controller.getConfig().getEmailSize();
     int emailSizeIndex = IntStream.range(0, emailSizeComboBox.getItems().size())

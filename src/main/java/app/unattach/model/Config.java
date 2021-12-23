@@ -15,6 +15,7 @@ public interface Config {
   String getRemovedLabelId();
   boolean getResizeImages();
   String getSearchQuery();
+  String getSelectedSearchTab();
   boolean getSignInAutomatically();
   boolean getSubscribeToUpdates();
   String getTargetDirectory();
@@ -28,6 +29,7 @@ public interface Config {
   void saveRemovedLabelId(String removedLabelId);
   void saveResizeImages(boolean resizeImages);
   void saveSearchQuery(String query);
+  void saveSelectedSearchTab(String selectedSearchTab);
   void saveSignInAutomatically(boolean signInAutomatically);
   void saveSubscribeToUpdates(boolean subscribeToUpdates);
   void saveTargetDirectory(String path);
