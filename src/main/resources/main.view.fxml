@@ -24,8 +24,6 @@
       <Menu fx:id="dateFormatMenu" text="Date Format"/>
       <CheckMenuItem fx:id="processEmbeddedCheckMenuItem" text="Process embedded attachments"
                      onAction="#onProcessEmbeddedCheckMenuItemPressed" />
-      <CheckMenuItem fx:id="resizeImagesCheckMenuItem" text="After removing an image, insert a smaller version"
-                     onAction="#onResizeImagesCheckMenuItemPressed" />
       <CheckMenuItem fx:id="addMetadataCheckMenuItem" text="Add metadata about removed attachments" selected="true" />
       <Menu text="After inserting email copy without attachments..." >
         <CheckMenuItem fx:id="permanentlyRemoveOriginalMenuItem" text="Permanently remove original email" selected="true"
@@ -183,33 +181,35 @@
 
       <HBox alignment="CENTER">
         <Region HBox.hgrow="ALWAYS"/>
-        <CheckBox fx:id="backupCheckBox" text="Backup Emails">
+        <CheckBox fx:id="backupEmailsCheckBox" text="Backup Email" onAction="#onBackupEmailCheckBoxChanged">
           <tooltip>
-            <Tooltip text="Backup raw emails to the specified directory."/>
+            <Tooltip prefWidth="300" wrapText="true" showDuration="30s" text="Backup email (in EML format) to the specified directory before making any changes to it."/>
           </tooltip>
         </CheckBox>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="downloadButton" text="Download attachments" onAction="#onDownloadButtonPressed"
-                styleClass="primary">
+        <CheckBox fx:id="downloadAttachmentsCheckBox" text="Download Attachments"
+                  onAction="#downloadAttachmentsCheckBoxChanged">
           <tooltip>
-            <Tooltip text="Download attachments to the specified directory."/>
+            <Tooltip wrapText="true" showDuration="30s" text="Download attachments to the specified directory."/>
           </tooltip>
-        </Button>
+        </CheckBox>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="downloadAndRemoveButton" text="Download and remove attachments"
-                onAction="#onDownloadAndRemoveButtonPressed" styleClass="primary">
+        <CheckBox fx:id="removeAttachmentsCheckBox" text="Remove Attachments"
+                  onAction="#onRemoveAttachmentsCheckBoxChanged">
           <tooltip>
-            <Tooltip text="Download attachments to the specified directory and remove them from the emails."/>
+            <Tooltip prefWidth="300" wrapText="true" showDuration="30s" text="Remove attachments from emails. If Reduce Image Resolution is also selected, image attachments are replaced with lower resolution variants rather than removed."/>
           </tooltip>
-        </Button>
+        </CheckBox>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="removeButton" text="Remove attachments" onAction="#onRemoveButtonPressed"
-                styleClass="primary">
-          <tooltip>
-            <Tooltip text="Remove attachments from the emails."/>
-          </tooltip>
-        </Button>
+        <CheckBox fx:id="reduceImageResolutionCheckBox" text="Reduce Image Resolution"
+                  onAction="#onReduceImageResolutionCheckBoxChanged">
+            <tooltip>
+                <Tooltip prefWidth="300" wrapText="true" showDuration="30s" text="Reduce the resolution of images larger than 500x500 to 500x500. If Download Attachments is also selected, the original image is downloaded. If Remove Attachments is also selected, all non-image attachments are removed."/>
+            </tooltip>
+        </CheckBox>
         <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="processSelectedEmailsButton" text="Process Selected Emails"
+                onAction="#onProcessSelectedEmailsButtonPressed" styleClass="primary"/>
       </HBox>
 
       <HBox spacing="10">
@@ -225,10 +225,10 @@
       <HBox alignment="CENTER" spacing="10">
         <CheckBox fx:id="enableScheduleCheckBox">
           <tooltip>
-            <Tooltip text="Enable periodic mode."/>
+            <Tooltip prefWidth="300" wrapText="true" showDuration="30s" text="Enable periodic mode. After selecting the desired period, press Search and then Process Selected Emails."/>
           </tooltip>
         </CheckBox>
-        <Label fx:id="schedulePeriodPrefixLabel" text="Run current search and last action every" disable="true"/>
+        <Label fx:id="schedulePeriodPrefixLabel" text="Run current configuration every" disable="true"/>
         <ComboBox fx:id="schedulePeriodComboBox" disable="true"/>
         <Region HBox.hgrow="ALWAYS"/>
         <Label fx:id="scheduleTimeLabel"/>

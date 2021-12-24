@@ -1,5 +1,6 @@
 package app.unattach.model.service;
 
+import app.unattach.utils.Clock;
 import app.unattach.utils.Logger;
 import com.google.api.client.googleapis.batch.BatchRequest;
 import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
@@ -7,10 +8,12 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.*;
 
 import java.io.IOException;
-import java.lang.Thread;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.SortedMap;
 
-public record LiveGmailService(Gmail gmail) implements GmailService {
+public record LiveGmailService(Clock clock, Gmail gmail) implements GmailService {
   private static final Logger logger = Logger.get();
   private static final String USER = "me";
 
@@ -144,10 +147,10 @@ public record LiveGmailService(Gmail gmail) implements GmailService {
         }
         messages.addAll(responseMessages);
         pageToken = response.getNextPageToken();
-        Thread.sleep(25);
+        clock.sleep(25);
       } while (pageToken != null);
       return messages;
-    } catch (IOException | InterruptedException e) {
+    } catch (IOException e) {
       throw new GmailServiceException(e);
     }
   }

@@ -7,17 +7,21 @@ import app.unattach.model.service.GmailServiceException;
 import app.unattach.model.service.GmailServiceManager;
 import app.unattach.model.service.GmailServiceManagerException;
 import app.unattach.utils.AttachmentNameExtractor;
+import app.unattach.utils.Clock;
 import app.unattach.utils.Logger;
 import app.unattach.utils.MimeMessagePrettyPrinter;
 import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.http.HttpHeaders;
-import com.google.api.services.gmail.model.*;
+import com.google.api.services.gmail.model.Label;
+import com.google.api.services.gmail.model.LabelColor;
+import com.google.api.services.gmail.model.Message;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,6 +31,7 @@ import static org.apache.commons.codec.binary.Base64.encodeBase64URLSafeString;
 public class LiveModel implements Model {
   private static final Logger logger = Logger.get();
 
+  private final Clock clock;
   private final Config config;
   private final UserStorage userStorage;
   private final GmailServiceManager gmailServiceManager;
@@ -34,7 +39,8 @@ public class LiveModel implements Model {
   private List<Email> searchResults;
   private String emailAddress;
 
-  public LiveModel(Config config, UserStorage userStorage, GmailServiceManager gmailServiceManager) {
+  public LiveModel(Clock clock, Config config, UserStorage userStorage, GmailServiceManager gmailServiceManager) {
+    this.clock = clock;
     this.config = config;
     this.userStorage = userStorage;
     this.gmailServiceManager = gmailServiceManager;
@@ -132,7 +138,7 @@ public class LiveModel implements Model {
 
   @Override
   public LongTask<ProcessEmailResult> getProcessTask(Email email, ProcessSettings processSettings) {
-    return new ProcessEmailTask(email, e -> processEmail(e, processSettings) /* 40 quota units */);
+    return new ProcessEmailTask(clock, email, e -> processEmail(e, processSettings) /* 40 quota units */);
   }
 
   private ProcessEmailResult processEmail(Email email, ProcessSettings processSettings)
@@ -140,37 +146,36 @@ public class LiveModel implements Model {
     Message message = service.getRawMessage(email.getGmailId()); // 5 quota units
     logger.info("Label IDs of the original email: " + message.getLabelIds());
     GmailService.trackInDebugMode(logger, message);
-    MimeMessage mimeMessage = GmailService.getMimeMessage(message);
+    final MimeMessage mimeMessage = GmailService.getMimeMessage(message);
     logger.info("MIME structure:%n%s", MimeMessagePrettyPrinter.prettyPrint(mimeMessage));
     String newId = null;
     ProcessOption processOption = processSettings.processOption();
     if (processOption.backupEmail()) {
       backupEmail(email, processSettings, mimeMessage);
     }
-    Set<String> originalAttachmentNames = new TreeSet<>();
-    mimeMessage = EmailProcessor.process(userStorage, email, mimeMessage, processSettings, originalAttachmentNames);
-    if (processOption.shouldDownload() && !processOption.shouldRemove() &&
+    EmailProcessorResult result = EmailProcessor.process(userStorage, email, mimeMessage, processSettings);
+    if (processOption.downloadAttachments() && !processOption.removeAttachments() &&
         !NO_LABEL.id().equals(processOption.downloadedLabelId())) {
       service.addLabel(message.getId(), processOption.downloadedLabelId());
     }
-    if (processOption.shouldRemove() && !originalAttachmentNames.isEmpty()) {
-      logger.info("New MIME structure:%n%s", MimeMessagePrettyPrinter.prettyPrint(mimeMessage));
-      updateRawMessage(message, mimeMessage);
+    if ((processOption.removeAttachments() || processOption.reduceImageResolution()) && result.messageModified()) {
+      logger.info("New MIME structure:%n%s", MimeMessagePrettyPrinter.prettyPrint(result.mimeMessage()));
+      updateRawMessage(message, result.mimeMessage());
       removeUnknownLabels(processSettings, message);
       logger.info("Label IDs of the email being inserted: " + message.getLabelIds());
       Message newMessage = service.insertMessage(message); // 25 quota units
       newId = newMessage.getId();
       GmailService.trackInDebugMode(logger, newMessage);
-      if (processOption.shouldDownload() && !NO_LABEL.id().equals(processOption.downloadedLabelId())) {
+      if (processOption.downloadAttachments() && !NO_LABEL.id().equals(processOption.downloadedLabelId())) {
         service.addLabel(newMessage.getId(), processOption.downloadedLabelId());
       }
       if (!NO_LABEL.id().equals(processOption.removedLabelId())) {
         service.addLabel(newMessage.getId(), processOption.removedLabelId());
       }
       // 5-10 quota units
-      service.removeMessage(message.getId(), processOption.permanentlyRemoveOriginal());
+      service.removeMessage(message.getId(), processOption.permanentlyRemoveOriginalEmail());
     }
-    return new ProcessEmailResult(newId, originalAttachmentNames);
+    return new ProcessEmailResult(newId);
   }
 
   private void removeUnknownLabels(ProcessSettings processSettings, Message message) {
@@ -236,7 +241,7 @@ public class LiveModel implements Model {
       }
     };
 
-    return new GetEmailMetadataTask(emailIdsToProcess, (startIndexInclusive, endIndexExclusive) -> {
+    return new GetEmailMetadataTask(clock, emailIdsToProcess, (startIndexInclusive, endIndexExclusive) -> {
         logger.info("Getting info about emails with index [%d, %d)...", startIndexInclusive, endIndexExclusive);
         List<String> emailIds = emailIdsToProcess.subList(startIndexInclusive, endIndexExclusive);
         service.batchGetMetadata(emailIds, perEmailCallback);

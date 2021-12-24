@@ -1,5 +1,6 @@
 package app.unattach.model.service;
 
+import app.unattach.utils.Clock;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
@@ -27,8 +28,13 @@ public class LiveGmailServiceManager implements GmailServiceManager {
   private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
   private static final List<String> SCOPES = Collections.singletonList(GmailScopes.MAIL_GOOGLE_COM);
 
+  private final Clock clock;
   private FileDataStoreFactory dataStoreFactory;
   private HttpTransport httpTransport;
+
+  public LiveGmailServiceManager(Clock clock) {
+    this.clock = clock;
+  }
 
   @Override
   public GmailService signIn() throws GmailServiceManagerException {
@@ -39,7 +45,7 @@ public class LiveGmailServiceManager implements GmailServiceManager {
       Gmail gmail = new Gmail.Builder(httpTransport, JSON_FACTORY, setHttpTimeout(credential))
           .setApplicationName(GOOGLE_APPLICATION_NAME)
           .build();
-      return new LiveGmailService(gmail);
+      return new LiveGmailService(clock, gmail);
     } catch (GeneralSecurityException | IOException e) {
       throw new GmailServiceManagerException(e);
     }
@@ -63,6 +69,7 @@ public class LiveGmailServiceManager implements GmailServiceManager {
   }
 
   private Credential authorize() throws IOException {
+    //noinspection ConstantConditions
     try (InputStreamReader reader = new InputStreamReader(getClass().getResourceAsStream("/credentials.json"))) {
       GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, reader);
       GoogleAuthorizationCodeFlow flow =

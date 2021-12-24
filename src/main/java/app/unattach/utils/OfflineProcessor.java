@@ -3,7 +3,6 @@ package app.unattach.utils;
 import app.unattach.model.*;
 import app.unattach.model.attachmentstorage.FileUserStorage;
 import app.unattach.model.attachmentstorage.UserStorage;
-import app.unattach.view.Action;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -38,8 +37,8 @@ public class OfflineProcessor {
       int sizeInBytes = mimeMessage.getSize();
       List<String> knownAttachments = List.of();
       Email email = new Email(gmailId, labels, from, to, subject, timestamp, sizeInBytes, knownAttachments);
-      ProcessOption processOption = new ProcessOption(Action.DOWNLOAD_AND_REMOVE, true,
-          true, true, false, Constants.DEFAULT_DOWNLOADED_LABEL_NAME,
+      ProcessOption processOption = new ProcessOption(true, true, true, true,
+          true, true, Constants.DEFAULT_DOWNLOADED_LABEL_NAME,
           Constants.DEFAULT_REMOVED_LABEL_NAME);
       File targetDirectory = emlFile.getParentFile();
       String filenameSchema = FilenameFactory.DEFAULT_SCHEMA;
@@ -47,11 +46,10 @@ public class OfflineProcessor {
       ProcessSettings processSettings = new ProcessSettings(processOption, targetDirectory, filenameSchema,
           true, idToLabel);
       logger.info("Using process settings: %s", processSettings);
-      Set<String> attachmentNames = new TreeSet<>();
       logger.info("Mime structure before: " + MimeMessagePrettyPrinter.prettyPrint(mimeMessage));
-      EmailProcessor.process(userStorage, email, mimeMessage, processSettings, attachmentNames);
-      logger.info("Mime structure after: " + MimeMessagePrettyPrinter.prettyPrint(mimeMessage));
-      logger.info("Attachment names: " + attachmentNames);
+      EmailProcessorResult result = EmailProcessor.process(userStorage, email, mimeMessage, processSettings);
+      logger.info("Mime structure after: " + MimeMessagePrettyPrinter.prettyPrint(result.mimeMessage()));
+      logger.info("Message modified: " + result.messageModified());
     }
   }
 }

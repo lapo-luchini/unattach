@@ -3,6 +3,7 @@ package app.unattach.model;
 import app.unattach.controller.LongTask;
 import app.unattach.controller.LongTaskException;
 import app.unattach.model.service.GmailServiceException;
+import app.unattach.utils.Clock;
 
 import java.util.List;
 
@@ -11,8 +12,9 @@ public class GetEmailMetadataTask implements LongTask<GetEmailMetadataTask.Resul
     void getEmailMetadata(int startIndexInclusive, int endIndexExclusive) throws GmailServiceException;
   }
 
-  public static record Result(int currentBatchNumber) {}
+  public record Result(int currentBatchNumber) {}
 
+  private final Clock clock;
   private final List<String> emailIds;
   // (maximum batch size = 100)
   // batch size = 40 ==> batch quota units = 200 ==> 1 batch / second
@@ -21,7 +23,8 @@ public class GetEmailMetadataTask implements LongTask<GetEmailMetadataTask.Resul
   private final Worker worker;
   private int currentBatchNumber;
 
-  GetEmailMetadataTask(List<String> emailIds, Worker worker) {
+  GetEmailMetadataTask(Clock clock, List<String> emailIds, Worker worker) {
+    this.clock = clock;
     this.emailIds = emailIds;
     numberOfBatches = (emailIds.size() + batchSize - 1) / batchSize;
     this.worker = worker;
@@ -41,7 +44,7 @@ public class GetEmailMetadataTask implements LongTask<GetEmailMetadataTask.Resul
   public Result takeStep() throws LongTaskException {
     try {
       if (currentBatchNumber != 0) {
-        Thread.sleep(1000);
+        clock.sleep(1000);
       }
       final int startIndexInclusive = currentBatchNumber * batchSize;
       final int endIndexExclusive = Math.min(emailIds.size(), (currentBatchNumber + 1) * batchSize);

@@ -49,6 +49,7 @@ public class Email implements Observable {
     this.gmailId = gmailId;
   }
 
+  @SuppressWarnings("unused")
   @FXML
   public String getLabelNamesDelimited() {
     return labels.stream().map(GmailLabel::name).collect(Collectors.joining(", "));
@@ -115,6 +116,7 @@ public class Email implements Observable {
   }
 
   @FXML
+  @SuppressWarnings("unused")
   public String getAttachments() {
     return String.join(", ", attachments);
   }

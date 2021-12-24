@@ -1,7 +1,7 @@
 package app.unattach.model;
 
 public record GmailLabel(String id, String name) implements Comparable<GmailLabel> {
-  public static GmailLabel NO_LABEL = new GmailLabel("UNATTACH_NO_LABEL", "(no label)");
+  public static final GmailLabel NO_LABEL = new GmailLabel("UNATTACH_NO_LABEL", "(no label)");
 
   @Override
   public String toString() {

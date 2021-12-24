@@ -25,7 +25,7 @@
 
   <Label fx:id="signInMessageLabel" textAlignment="CENTER" styleClass="sign-in-message"/>
 
-  <HBox spacing="10" alignment="CENTER" styleClass="button-row">
+  <HBox spacing="10" alignment="CENTER">
     <Button fx:id="howUnattachWorksButton" text="How Unattach Works" onAction="#onHowUnattachWorksButtonPressed"
             styleClass="secondary"/>
     <Button fx:id="privacyPolicyButton" text="Privacy Policy"

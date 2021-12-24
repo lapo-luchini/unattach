@@ -31,7 +31,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
   pushd tmp
   jar xf "$JAR_FILE"
   rm "$JAR_FILE"
-  ls *.dylib | xargs codesign -s "Developer ID Application: Rok Strnisa (73XQUXV944)" -f -v
+  ls ./*.dylib | xargs codesign -s "Developer ID Application: Rok Strnisa (73XQUXV944)" -f -v
   jar cmf META-INF/MANIFEST.MF "../$JAR_PATH" ./*
   popd
   # Create APP.

@@ -38,8 +38,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static app.unattach.view.Action.*;
-
 public class MainViewController {
   private static final Logger logger = Logger.get();
 
@@ -62,8 +60,6 @@ public class MainViewController {
   private Menu dateFormatMenu;
   @FXML
   private CheckMenuItem processEmbeddedCheckMenuItem;
-  @FXML
-  private CheckMenuItem resizeImagesCheckMenuItem;
   @FXML
   private CheckMenuItem permanentlyRemoveOriginalMenuItem;
   @FXML
@@ -106,8 +102,6 @@ public class MainViewController {
   @FXML
   private ProgressBarWithText searchProgressBarWithText;
   @FXML
-  private CheckBox backupCheckBox;
-  @FXML
   private Button stopSearchButton;
   private boolean stopSearchButtonPressed;
 
@@ -129,11 +123,15 @@ public class MainViewController {
   @FXML
   private Button browseButton;
   @FXML
-  private Button downloadButton;
+  private CheckBox backupEmailsCheckBox;
   @FXML
-  private Button downloadAndRemoveButton;
+  private CheckBox downloadAttachmentsCheckBox;
   @FXML
-  private Button removeButton;
+  private CheckBox removeAttachmentsCheckBox;
+  @FXML
+  private CheckBox reduceImageResolutionCheckBox;
+  @FXML
+  private Button processSelectedEmailsButton;
   @FXML
   private Button stopProcessingButton;
   @FXML
@@ -164,7 +162,6 @@ public class MainViewController {
     addMenuForHidingColumns();
     addMenuForDateFormats();
     processEmbeddedCheckMenuItem.setSelected(controller.getConfig().getProcessEmbedded());
-    resizeImagesCheckMenuItem.setSelected(controller.getConfig().getResizeImages());
     if (!controller.getConfig().getRemoveOriginal()) {
       onTrashOriginalMenuItemPressed();
     }
@@ -191,7 +188,7 @@ public class MainViewController {
     emailSizeComboBox.getSelectionModel().select(emailSizeIndex);
     searchQueryTextField.setText(controller.getConfig().getSearchQuery());
     searchProgressBarWithText.progressProperty().setValue(0);
-    searchProgressBarWithText.textProperty().setValue("(Searching not started yet.)");
+    searchProgressBarWithText.textProperty().setValue("(Search not started yet.)");
     toggleAllEmailsCheckBox.setTooltip(new Tooltip(SELECT_ALL_CAPTION));
     toggleAllEmailsCheckBox.selectedProperty()
         .addListener((checkbox, previous, current) -> onToggleAllEmailsCheckBoxChange());
@@ -214,6 +211,10 @@ public class MainViewController {
     selectSavedLabels(labels);
     basicSearchQueryPreviewTextField.setText(getBasicSearchQuery());
     resultsTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+    backupEmailsCheckBox.setSelected(controller.getConfig().getBackupEmails());
+    downloadAttachmentsCheckBox.setSelected(controller.getConfig().getDownloadAttachments());
+    removeAttachmentsCheckBox.setSelected(controller.getConfig().getRemoveAttachments());
+    reduceImageResolutionCheckBox.setSelected(controller.getConfig().getReduceImageResolution());
     enableScheduleCheckBox.selectedProperty()
         .addListener((checkBox, previous, current) -> onEnableScheduleCheckBoxChange());
     schedulePeriodComboBox.setItems(FXCollections.observableList(Arrays.asList(
@@ -298,11 +299,6 @@ public class MainViewController {
   @FXML
   private void onProcessEmbeddedCheckMenuItemPressed() {
     controller.getConfig().saveProcessEmbedded(processEmbeddedCheckMenuItem.isSelected());
-  }
-
-  @FXML
-  private void onResizeImagesCheckMenuItemPressed() {
-    controller.getConfig().saveResizeImages(resizeImagesCheckMenuItem.isSelected());
   }
 
   @FXML
@@ -500,34 +496,13 @@ public class MainViewController {
   }
 
   @FXML
-  private void onDownloadButtonPressed() {
+  private void onProcessSelectedEmailsButtonPressed() {
     String downloadedLabelId = controller.getOrCreateDownloadedLabelId();
     String removedLabelId = controller.getOrCreateRemovedLabelId();
-    ProcessOption processOption = new ProcessOption(DOWNLOAD, processEmbeddedCheckMenuItem.isSelected(),
-        resizeImagesCheckMenuItem.isSelected(), backupCheckBox.isSelected(), false, downloadedLabelId,
-        removedLabelId);
-    processEmails(processOption);
-  }
-
-  @FXML
-  private void onDownloadAndRemoveButtonPressed() {
-    boolean permanentlyRemoveOriginal = permanentlyRemoveOriginalMenuItem.isSelected();
-    String downloadedLabelId = controller.getOrCreateDownloadedLabelId();
-    String removedLabelId = controller.getOrCreateRemovedLabelId();
-    ProcessOption processOption = new ProcessOption(DOWNLOAD_AND_REMOVE, processEmbeddedCheckMenuItem.isSelected(),
-        resizeImagesCheckMenuItem.isSelected(), backupCheckBox.isSelected(), permanentlyRemoveOriginal,
-        downloadedLabelId, removedLabelId);
-    processEmails(processOption);
-  }
-
-  @FXML
-  private void onRemoveButtonPressed() {
-    boolean permanentlyRemoveOriginal = permanentlyRemoveOriginalMenuItem.isSelected();
-    String downloadedLabelId = controller.getOrCreateDownloadedLabelId();
-    String removedLabelId = controller.getOrCreateRemovedLabelId();
-    ProcessOption processOption = new ProcessOption(REMOVE, processEmbeddedCheckMenuItem.isSelected(),
-        resizeImagesCheckMenuItem.isSelected(), backupCheckBox.isSelected(), permanentlyRemoveOriginal,
-        downloadedLabelId, removedLabelId);
+    ProcessOption processOption = new ProcessOption(backupEmailsCheckBox.isSelected(),
+        downloadAttachmentsCheckBox.isSelected(), removeAttachmentsCheckBox.isSelected(),
+        reduceImageResolutionCheckBox.isSelected(), processEmbeddedCheckMenuItem.isSelected(),
+        permanentlyRemoveOriginalMenuItem.isSelected(), downloadedLabelId, removedLabelId);
     processEmails(processOption);
   }
 
@@ -572,7 +547,7 @@ public class MainViewController {
       processingProgressBarWithText.textProperty().setValue(message);
       resetControls();
       if (enableScheduleCheckBox.isSelected()) {
-        scheduleNextRun(processSettings.processOption().action());
+        scheduleNextRun();
       }
       return;
     }
@@ -649,10 +624,11 @@ public class MainViewController {
     toggleAllEmailsCheckBox.setDisable(true);
     targetDirectoryTextField.setDisable(true);
     browseButton.setDisable(true);
-    backupCheckBox.setDisable(true);
-    downloadButton.setDisable(true);
-    downloadAndRemoveButton.setDisable(true);
-    removeButton.setDisable(true);
+    backupEmailsCheckBox.setDisable(true);
+    downloadAttachmentsCheckBox.setDisable(true);
+    removeAttachmentsCheckBox.setDisable(true);
+    reduceImageResolutionCheckBox.setDisable(true);
+    processSelectedEmailsButton.setDisable(true);
     stopProcessingButton.setDisable(true);
   }
 
@@ -666,10 +642,11 @@ public class MainViewController {
     toggleAllEmailsCheckBox.setSelected(false);
     targetDirectoryTextField.setDisable(false);
     browseButton.setDisable(false);
-    backupCheckBox.setDisable(false);
-    downloadButton.setDisable(false);
-    downloadAndRemoveButton.setDisable(false);
-    removeButton.setDisable(false);
+    backupEmailsCheckBox.setDisable(false);
+    downloadAttachmentsCheckBox.setDisable(false);
+    removeAttachmentsCheckBox.setDisable(false);
+    reduceImageResolutionCheckBox.setDisable(false);
+    processSelectedEmailsButton.setDisable(false);
     stopProcessingButton.setDisable(true);
   }
 
@@ -814,9 +791,9 @@ public class MainViewController {
     schedulePeriodComboBox.setDisable(!enabled);
   }
 
-  private void scheduleNextRun(Action action) {
+
+  private void scheduleNextRun() {
     stopAnyRunningSchedule();
-    stopScheduleButton.setDisable(false);
     SchedulePeriod schedulePeriod = schedulePeriodComboBox.getSelectionModel().getSelectedItem();
     LocalDateTime nextRunTime = LocalDateTime.now().plusSeconds(schedulePeriod.seconds());
     timeline = new Timeline(new KeyFrame(Duration.ZERO, event -> {
@@ -825,26 +802,24 @@ public class MainViewController {
         timeline.stop();
         timeline = null;
         scheduleTimeLabel.setText("");
-        onSchedule(action);
+        onSchedule();
       } else {
         long durationMillis = java.time.Duration.between(now, nextRunTime).toMillis();
-        String duration = DurationFormatUtils.formatDurationWords(durationMillis, true, false);
-        scheduleTimeLabel.setText("Next '" + action + "' in " + duration + ".");
+        String durationWords = DurationFormatUtils.formatDurationWords(durationMillis, true,
+            false);
+        scheduleTimeLabel.setText("Next run in " + durationWords + ".");
       }
     }), new KeyFrame(Duration.seconds(1)));
     timeline.setCycleCount(Timeline.INDEFINITE);
     timeline.play();
+    stopScheduleButton.setDisable(false);
   }
 
   @FXML
-  private void onSchedule(Action action) {
+  private void onSchedule() {
     onSearchButtonPressed(() -> {
       toggleAllEmailsCheckBox.setSelected(true);
-      switch (action) {
-        case DOWNLOAD -> onDownloadButtonPressed();
-        case REMOVE -> onRemoveButtonPressed();
-        case DOWNLOAD_AND_REMOVE -> onDownloadAndRemoveButtonPressed();
-      }
+      onProcessSelectedEmailsButtonPressed();
     });
   }
 
@@ -861,5 +836,25 @@ public class MainViewController {
     }
     scheduleTimeLabel.setText("");
     stopScheduleButton.setDisable(true);
+  }
+
+  @FXML
+  private void onBackupEmailCheckBoxChanged() {
+    controller.getConfig().saveBackupEmail(backupEmailsCheckBox.isSelected());
+  }
+
+  @FXML
+  private void downloadAttachmentsCheckBoxChanged() {
+    controller.getConfig().saveDownloadAttachments(downloadAttachmentsCheckBox.isSelected());
+  }
+
+  @FXML
+  private void onReduceImageResolutionCheckBoxChanged() {
+    controller.getConfig().saveReduceImageResolution(reduceImageResolutionCheckBox.isSelected());
+  }
+
+  @FXML
+  private void onRemoveAttachmentsCheckBoxChanged() {
+    controller.getConfig().saveRemoveAttachments(removeAttachmentsCheckBox.isSelected());
   }
 }

@@ -1,22 +1,5 @@
 package app.unattach.model;
 
-import app.unattach.view.Action;
-
-public record ProcessOption(Action action, boolean processEmbedded, boolean resizeImages, boolean backupEmail,
-                            boolean permanentlyRemoveOriginal, String downloadedLabelId, String removedLabelId) {
-  public boolean shouldDownload() {
-    return action == Action.DOWNLOAD || action == Action.DOWNLOAD_AND_REMOVE;
-  }
-
-  public boolean shouldRemove() {
-    return action == Action.REMOVE || action == Action.DOWNLOAD_AND_REMOVE;
-  }
-
-  public boolean shouldProcessEmbedded() {
-    return processEmbedded;
-  }
-
-  public boolean shouldResizeImages() {
-    return resizeImages;
-  }
-}
+public record ProcessOption(boolean backupEmail, boolean downloadAttachments, boolean removeAttachments,
+                            boolean reduceImageResolution, boolean processEmbeddedAttachments,
+                            boolean permanentlyRemoveOriginalEmail, String downloadedLabelId, String removedLabelId) {}

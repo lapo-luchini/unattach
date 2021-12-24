@@ -36,7 +36,7 @@ public class SignInViewController {
   @FXML
   public void initialize() {
     controller = ControllerFactory.getDefaultController();
-    signInMessageLabel.setText("The first time you sign in, you will be asked to give the app permissions to your Gmail.\n" +
+    signInMessageLabel.setText("The first clock you sign in, you will be asked to give the app permissions to your Gmail.\n" +
             "Click on 'How Unattach Works' to see why this is required and how your privacy is protected.");
     subscribeToUpdatesCheckBox.setSelected(controller.getConfig().getSubscribeToUpdates());
     Platform.runLater(() -> signInButton.requestFocus());

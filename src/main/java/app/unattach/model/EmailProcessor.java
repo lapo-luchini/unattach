@@ -37,7 +37,7 @@ public class EmailProcessor {
   private final FilenameFactory filenameFactory;
   private int fileCounter = 0;
   private final List<Part> detectedAttachmentParts;
-  private final Set<String> originalAttachmentNames;
+  private boolean messageModified = false;
   private final Map<String, String> originalToNormalizedFilename;
   private final Set<String> resizedImageNames;
   private Part mainTextPart;
@@ -52,7 +52,6 @@ public class EmailProcessor {
     Set<String> unattachLabelIds = getUnattachLabelIds(processSettings);
     filenameFactory = new FilenameFactory(processSettings.filenameSchema(), unattachLabelIds);
     detectedAttachmentParts = new LinkedList<>();
-    originalAttachmentNames = new TreeSet<>();
     originalToNormalizedFilename = new TreeMap<>();
     resizedImageNames = new TreeSet<>();
   }
@@ -69,15 +68,15 @@ public class EmailProcessor {
     return unattachLabelIds;
   }
 
-  public static MimeMessage process(UserStorage userStorage, Email email, MimeMessage mimeMessage,
-                             ProcessSettings processSettings, Set<String> originalAttachmentNames)
+  public static EmailProcessorResult process(UserStorage userStorage, Email email, MimeMessage mimeMessage,
+                                             ProcessSettings processSettings)
       throws IOException, MessagingException {
     EmailProcessor processor = new EmailProcessor(userStorage, email, mimeMessage, processSettings);
     // As per https://bugs.openjdk.java.net/browse/JDK-8195686, Java doesn't have direct support for iso-8859-8-i
     // encoding; however, iso-8859-8 is equivalent, so we pre-emptively replace it.
     explore(processor.mimeMessage, replaceContentType("iso-8859-8-i", "iso-8859-8", true));
     explore(processor.mimeMessage, processor::detectAndMaybeSaveAttachment);
-    if (processSettings.processOption().shouldRemove()) {
+    if (processSettings.processOption().removeAttachments() || processSettings.processOption().reduceImageResolution()) {
       processor.removeDetectedAttachmentParts();
       if (processSettings.addMetadata()) {
         explore(processor.mimeMessage, processor::findTextAndHtml);
@@ -85,8 +84,7 @@ public class EmailProcessor {
       }
     }
     processor.mimeMessage.saveChanges();
-    originalAttachmentNames.addAll(processor.originalAttachmentNames);
-    return processor.mimeMessage;
+    return new EmailProcessorResult(processor.mimeMessage, processor.messageModified);
   }
 
   @FunctionalInterface
@@ -132,7 +130,7 @@ public class EmailProcessor {
    * @return Whether to recursively explore child body parts.
    */
   private boolean detectAndMaybeSaveAttachment(Part part) throws IOException, MessagingException {
-    if (!processSettings.processOption().shouldProcessEmbedded() && part.isMimeType("multipart/related")) {
+    if (!processSettings.processOption().processEmbeddedAttachments() && part.isMimeType("multipart/related")) {
       return false;
     }
     String contentType = part.getContentType();
@@ -143,12 +141,11 @@ public class EmailProcessor {
     if (!isDownloadable(processSettings.processOption(), part, originalFilename)) {
       return true;
     }
-    originalAttachmentNames.add(originalFilename);
     detectedAttachmentParts.add(part);
 
     String normalizedFilename = filenameFactory.getFilename(email, fileCounter++, originalFilename);
     originalToNormalizedFilename.put(originalFilename, normalizedFilename);
-    if (processSettings.processOption().shouldDownload()) {
+    if (processSettings.processOption().downloadAttachments()) {
       try (InputStream inputStream = part.getInputStream()) {
         userStorage.saveAttachment(inputStream, processSettings.targetDirectory(), normalizedFilename, email.getTimestamp());
         logger.info("Saved attachment %s from email with subject '%s' to file %s.", originalFilename, email.getSubject(),
@@ -163,7 +160,7 @@ public class EmailProcessor {
    */
   private boolean isDownloadable(ProcessOption processOption, Part part, String filename) throws MessagingException {
     String disposition = part.getDisposition();
-    return (disposition == null || disposition.equalsIgnoreCase(Part.ATTACHMENT) || processOption.processEmbedded())
+    return (disposition == null || disposition.equalsIgnoreCase(Part.ATTACHMENT) || processOption.processEmbeddedAttachments())
         && filename != null;
   }
 
@@ -184,35 +181,43 @@ public class EmailProcessor {
     }
   }
 
-  private void removeDetectedAttachmentParts() throws MessagingException {
+  private void removeDetectedAttachmentParts() throws MessagingException, UnsupportedEncodingException {
     // If an attachment is the whole email body, replace it with an empty multipart alternative.
-    if (detectedAttachmentParts.size() == 1 && detectedAttachmentParts.get(0) == mimeMessage) {
+    if (processSettings.processOption().removeAttachments() && detectedAttachmentParts.size() == 1 &&
+        detectedAttachmentParts.get(0) == mimeMessage) {
       mimeMessage = shallowCopy(mimeMessage);
+      messageModified = true;
       return;
     }
     for (Part part : detectedAttachmentParts) {
       if (part instanceof BodyPart bodyPart) {
         Multipart parent = bodyPart.getParent();
-        parent.removeBodyPart(bodyPart);
-        if (processSettings.processOption().shouldResizeImages()) {
-          insertResizedImage(parent, part);
+        String filename = getFilename(part);
+        if (filename == null) {
+          continue;
+        }
+        String fileExtension = FileUtils.getExtension(filename);
+        if (processSettings.processOption().reduceImageResolution() && isSupportedImageFormat(fileExtension)) {
+          parent.removeBodyPart(bodyPart);
+          insertImageWithReducedResolution(parent, part, filename, fileExtension);
+          messageModified = true;
+        } else if (processSettings.processOption().removeAttachments()) {
+          parent.removeBodyPart(bodyPart);
+          messageModified = true;
         }
       }
     }
   }
 
-  private void insertResizedImage(Multipart parent, Part part) throws MessagingException {
+  public static boolean isSupportedImageFormat(String fileExtension) {
+    final Set<String> SUPPORTED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "tiff", "tif");
+    return SUPPORTED_IMAGE_EXTENSIONS.contains(fileExtension.toLowerCase());
+  }
+
+  private void insertImageWithReducedResolution(Multipart parent, Part part, String filename, String fileExtension)
+      throws MessagingException {
     try {
-      String filename = getFilename(part);
-      if (filename == null) {
-        return;
-      }
-      final Set<String> SUPPORTED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "tiff", "tif");
-      String fileExtension = FileUtils.getExtension(filename);
-      if (!SUPPORTED_IMAGE_EXTENSIONS.contains(fileExtension.toLowerCase())) {
-        return;
-      }
-      logger.info("Attempting to resize the image named %s...", filename);
+      logger.info("Attempting to reduce the resolution of the image named %s...", filename);
       MimeBodyPart newPart = new MimeBodyPart();
       CountingInputStream currentImageInputStream = new CountingInputStream(part.getInputStream());
       BufferedImage currentImage = ImageIO.read(currentImageInputStream);
@@ -220,7 +225,7 @@ public class EmailProcessor {
       logger.info("The size of the current image is %d bytes.", currentImageSize);
       final int maxTargetWidth = 500, maxTargetHeight = 500;
       if (currentImage.getWidth() <= maxTargetWidth || currentImage.getHeight() <= maxTargetHeight) {
-        logger.info("The current image already smaller than the target dimensions. Skipping.");
+        logger.info("The current image is already smaller than the target dimensions. Skipping.");
         return;
       }
       BufferedImage resizedImage = Scalr.resize(currentImage, Scalr.Method.QUALITY, Scalr.Mode.AUTOMATIC,
@@ -245,7 +250,7 @@ public class EmailProcessor {
       parent.addBodyPart(newPart);
       resizedImageNames.add(filename);
     } catch (IOException e) {
-      logger.error("Failed to resize an image.", e);
+      logger.error("Failed to reduce the resolution of an image.", e);
     }
   }
 
@@ -335,7 +340,7 @@ public class EmailProcessor {
       newText.append(" - ");
       newText.append(resizedImageNames.contains(originalFilename) ? "resized" : "removed").append(" ");
       newText.append(originalFilename);
-      if (processSettings.processOption().shouldDownload()) {
+      if (processSettings.processOption().downloadAttachments()) {
         newText.append(" (filename: ").append(normalizedFilename).append(")");
       }
       newText.append("\n");
@@ -344,7 +349,7 @@ public class EmailProcessor {
     newText.append(" - Made with:                 ").append(Constants.PRODUCT_NAME + " " +
         Constants.VERSION).append("\n");
     newText.append(" - Date and time:             ").append(dateTimeString).append("\n");
-    if (processSettings.processOption().shouldDownload()) {
+    if (processSettings.processOption().downloadAttachments()) {
       newText.append(" - Download target hostname:  ").append(hostname).append("\n");
       newText.append(" - Download target directory: ").append(processSettings.targetDirectory().getAbsolutePath()).append("\n");
     }
@@ -360,7 +365,7 @@ public class EmailProcessor {
       suffix.append("<li>");
       suffix.append(resizedImageNames.contains(originalFilename) ? "resized" : "removed").append(" ");
       suffix.append(originalFilename);
-      if (processSettings.processOption().shouldDownload()) {
+      if (processSettings.processOption().downloadAttachments()) {
         suffix.append(" (");
         Path normalisedPath = Paths.get(targetDirectoryAbsolutePath, normalizedFilename);
         suffix.append("filename: ").append(normalisedPath).append(", ");
@@ -374,7 +379,7 @@ public class EmailProcessor {
     suffix.append("<li>Made with: ").append("<a href='" + Constants.HOMEPAGE + "'>" + Constants.PRODUCT_NAME + "</a> " +
         Constants.VERSION).append("</li>\n");
     suffix.append("<li>Date and time: ").append(dateTimeString).append("</li>\n");
-    if (processSettings.processOption().shouldDownload()) {
+    if (processSettings.processOption().downloadAttachments()) {
       suffix.append("<li>Download target host name: ").append(hostname).append("</li>\n");
       suffix.append("<li>Download target directory: ").append(targetDirectoryAbsolutePath).append("</li>\n");
       suffix.append("<li><i>File links only work in native email apps (e.g. Mail, Outlook) on the target host.</i></li>\n");

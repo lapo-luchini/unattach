@@ -8,15 +8,18 @@ import java.util.Properties;
 import java.util.Set;
 
 public class BaseConfig implements Config {
+  private static final String BACKUP_EMAIL_PROPERTY = "backup_email";
   private static final String DATE_FORMAT_PROPERTY = "date_format";
-  private static final String REMOVE_ORIGINAL_PROPERTY = "remove_original";
+  private static final String DOWNLOAD_ATTACHMENTS_PROPERTY = "download_attachments";
   private static final String DOWNLOADED_LABEL_ID_PROPERTY = "downloaded_label_id";
   private static final String EMAIL_SIZE_PROPERTY = "email_size";
   private static final String FILENAME_SCHEMA_PROPERTY = "filename_schema";
   private static final String LABEL_IDS_PROPERTY = "label_ids";
   private static final String PROCESS_EMBEDDED_PROPERTY = "process_embedded";
+  private static final String REMOVE_ATTACHMENTS_PROPERTY = "remove_attachments";
   private static final String REMOVED_LABEL_ID_PROPERTY = "removed_label_id";
-  private static final String RESIZE_IMAGES_PROPERTY = "resize_images";
+  private static final String REMOVE_ORIGINAL_PROPERTY = "remove_original";
+  private static final String REDUCE_IMAGE_RESOLUTION_PROPERTY = "reduce_image_resolution";
   private static final String SEARCH_QUERY_PROPERTY = "search_query";
   private static final String SELECTED_SEARCH_TAB_PROPERTY = "selected_search_tab";
   private static final String SIGN_IN_AUTOMATICALLY_PROPERTY = "sign_in_automatically";
@@ -24,15 +27,18 @@ public class BaseConfig implements Config {
   private static final String TARGET_DIRECTORY_PROPERTY = "target_directory";
 
   private static final Set<String> PROPERTY_NAMES = Set.of(
+      BACKUP_EMAIL_PROPERTY,
       DATE_FORMAT_PROPERTY,
-      REMOVE_ORIGINAL_PROPERTY,
+      DOWNLOAD_ATTACHMENTS_PROPERTY,
       DOWNLOADED_LABEL_ID_PROPERTY,
       EMAIL_SIZE_PROPERTY,
       FILENAME_SCHEMA_PROPERTY,
       LABEL_IDS_PROPERTY,
       PROCESS_EMBEDDED_PROPERTY,
+      REMOVE_ATTACHMENTS_PROPERTY,
       REMOVED_LABEL_ID_PROPERTY,
-      RESIZE_IMAGES_PROPERTY,
+      REMOVE_ORIGINAL_PROPERTY,
+      REDUCE_IMAGE_RESOLUTION_PROPERTY,
       SEARCH_QUERY_PROPERTY,
       SELECTED_SEARCH_TAB_PROPERTY,
       SIGN_IN_AUTOMATICALLY_PROPERTY,
@@ -54,6 +60,16 @@ public class BaseConfig implements Config {
   @Override
   public Set<String> getPropertyNames() {
     return PROPERTY_NAMES;
+  }
+
+  @Override
+  public boolean getBackupEmails() {
+    return Boolean.parseBoolean(config.getProperty(BACKUP_EMAIL_PROPERTY, "true"));
+  }
+
+  @Override
+  public boolean getDownloadAttachments() {
+    return Boolean.parseBoolean(config.getProperty(DOWNLOAD_ATTACHMENTS_PROPERTY, "true"));
   }
 
   @Override
@@ -92,13 +108,18 @@ public class BaseConfig implements Config {
   }
 
   @Override
+  public boolean getRemoveAttachments() {
+    return Boolean.parseBoolean(config.getProperty(PROCESS_EMBEDDED_PROPERTY, "false"));
+  }
+
+  @Override
   public String getRemovedLabelId() {
     return config.getProperty(REMOVED_LABEL_ID_PROPERTY);
   }
 
   @Override
-  public boolean getResizeImages() {
-    return Boolean.parseBoolean(config.getProperty(RESIZE_IMAGES_PROPERTY, "false"));
+  public boolean getReduceImageResolution() {
+    return Boolean.parseBoolean(config.getProperty(REDUCE_IMAGE_RESOLUTION_PROPERTY, "false"));
   }
 
   @Override
@@ -127,8 +148,20 @@ public class BaseConfig implements Config {
   }
 
   @Override
+  public void saveBackupEmail(boolean backupEmail) {
+    config.setProperty(BACKUP_EMAIL_PROPERTY, Boolean.toString(backupEmail));
+    saveConfig();
+  }
+
+  @Override
   public void saveDateFormat(String pattern) {
     config.setProperty(DATE_FORMAT_PROPERTY, pattern);
+    saveConfig();
+  }
+
+  @Override
+  public void saveDownloadAttachments(boolean downloadAttachments) {
+    config.setProperty(DOWNLOAD_ATTACHMENTS_PROPERTY, Boolean.toString(downloadAttachments));
     saveConfig();
   }
 
@@ -163,8 +196,14 @@ public class BaseConfig implements Config {
   }
 
   @Override
-  public void saveResizeImages(boolean resizeImages) {
-    config.setProperty(RESIZE_IMAGES_PROPERTY, Boolean.toString(resizeImages));
+  public void saveReduceImageResolution(boolean reduceImageResolution) {
+    config.setProperty(REDUCE_IMAGE_RESOLUTION_PROPERTY, Boolean.toString(reduceImageResolution));
+    saveConfig();
+  }
+
+  @Override
+  public void saveRemoveAttachments(boolean removeAttachments) {
+    config.setProperty(REMOVE_ATTACHMENTS_PROPERTY, Boolean.toString(removeAttachments));
     saveConfig();
   }
 
