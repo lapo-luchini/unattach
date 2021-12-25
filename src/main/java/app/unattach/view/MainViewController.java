@@ -432,11 +432,7 @@ public class MainViewController {
   @FXML
   private void onToggleAllEmailsCheckBoxChange() {
     EmailStatus targetStatus = toggleAllEmailsCheckBox.isSelected() ? EmailStatus.TO_PROCESS : EmailStatus.NOT_SELECTED;
-    resultsTable.getItems().forEach(email -> {
-      if (email.getStatus() == EmailStatus.NOT_SELECTED || email.getStatus() == EmailStatus.TO_PROCESS) {
-        email.setStatus(targetStatus);
-      }
-    });
+    resultsTable.getItems().forEach(email -> email.setStatus(targetStatus));
     resultsTable.refresh();
     Tooltip tooltip = new Tooltip(toggleAllEmailsCheckBox.isSelected() ? DESELECT_ALL_CAPTION : SELECT_ALL_CAPTION);
     toggleAllEmailsCheckBox.setTooltip(tooltip);
