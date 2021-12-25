@@ -196,10 +196,7 @@ public class MainViewController {
     targetDirectoryTextField.setText(controller.getConfig().getTargetDirectory());
     processingProgressBarWithText.progressProperty().setValue(0);
     processingProgressBarWithText.textProperty().setValue("(Processing of emails not started yet.)");
-    labelsListViewLabel.setText("""
-        Your Gmail labels (optional):
-        - Each result will have at least one selected label.
-        - Select no labels to ignore this filter.""");
+    updateLabelsListViewLabelText(0);
     labelsListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     List<GmailLabel> labels = controller.getIdToLabel().entrySet().stream()
         .map(e -> new GmailLabel(e.getKey(), e.getValue())).sorted(Comparator.comparing(GmailLabel::name))
@@ -273,7 +270,16 @@ public class MainViewController {
     List<String> labelIds = labelsListView.getItems().stream().filter(label -> labelListSelected.get(label).get())
         .map(GmailLabel::id).collect(Collectors.toList());
     controller.getConfig().saveLabelIds(labelIds);
+    updateLabelsListViewLabelText(labelIds.size());
     basicSearchQueryPreviewTextField.setText(getBasicSearchQuery());
+  }
+
+  private void updateLabelsListViewLabelText(int numberOfSelectedLabels) {
+    labelsListViewLabel.setText("""
+        Your Gmail labels (optional):
+        - Each result will have at least one selected label.
+        - Select no labels to ignore this filter.
+        - Number of currently selected labels:""" + " " + numberOfSelectedLabels);
   }
 
   private Vector<ComboItem<Integer>> getEmailSizeOptions() {
