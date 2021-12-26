@@ -2,7 +2,7 @@ package app.unattach.model;
 
 public final class Constants {
   public static final int BYTES_IN_MEGABYTE = 1024 * 1024;
-  public static final String CONTACT_EMAIL = "rok.strnisa@gmail.com";
+  public static final String CONTACT_EMAIL = "contact@unattach.app";
   public static final String[] CURRENCIES = {"AUD", "CAD", "CHF", "EUR", "GBP", "USD"};
   public static final String DEFAULT_CURRENCY = "USD";
   public static final String DEFAULT_DOWNLOADED_LABEL_NAME = "Unattach - Downloaded";
