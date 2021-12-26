@@ -199,8 +199,7 @@ public class GmailServiceTest {
         assertTrue(FileUtils.contentEquals(originalFile, fileFirstRun), attachment);
       }
       File fileSecondRun = secondRunPath.resolve("attachments").resolve(attachment).toFile();
-      String fileExtension = org.codehaus.plexus.util.FileUtils.getExtension(attachment);
-      boolean isImage = EmailProcessor.isSupportedImageFormat(fileExtension);
+      boolean isImage = EmailProcessor.isSupportedImageFilename(attachment);
       if (isImage && resizeImages) {
         // If attachment is an image, and we're resizing images, the new image must exist and be smaller.
         assertTrue(fileSecondRun.exists(), attachment);
@@ -223,7 +222,8 @@ public class GmailServiceTest {
         String content = getMainContent(newMimeMessage.getContent());
         assertTrue(content.contains("Removed/modified attachments"));
         for (String attachment : attachments) {
-          assertTrue(content.contains(attachment));
+          boolean isImage = EmailProcessor.isSupportedImageFilename(attachment);
+          assertEquals(isImage || remove, content.contains(attachment));
         }
       }
     }

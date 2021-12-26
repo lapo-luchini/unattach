@@ -37,7 +37,7 @@ public class EmailProcessor {
   private final FilenameFactory filenameFactory;
   private int fileCounter = 0;
   private final List<Part> detectedAttachmentParts;
-  private boolean messageModified = false;
+  private final List<Part> modifiedAttachmentParts;
   private final Map<String, String> originalToNormalizedFilename;
   private final Set<String> resizedImageNames;
   private Part mainTextPart;
@@ -52,6 +52,7 @@ public class EmailProcessor {
     Set<String> unattachLabelIds = getUnattachLabelIds(processSettings);
     filenameFactory = new FilenameFactory(processSettings.filenameSchema(), unattachLabelIds);
     detectedAttachmentParts = new LinkedList<>();
+    modifiedAttachmentParts = new LinkedList<>();
     originalToNormalizedFilename = new TreeMap<>();
     resizedImageNames = new TreeSet<>();
   }
@@ -77,14 +78,14 @@ public class EmailProcessor {
     explore(processor.mimeMessage, replaceContentType("iso-8859-8-i", "iso-8859-8", true));
     explore(processor.mimeMessage, processor::detectAndMaybeSaveAttachment);
     if (processSettings.processOption().removeAttachments() || processSettings.processOption().reduceImageResolution()) {
-      processor.removeDetectedAttachmentParts();
+      processor.processDetectedAttachmentParts();
       if (processSettings.addMetadata()) {
         explore(processor.mimeMessage, processor::findTextAndHtml);
         processor.addReferencesToContent();
       }
     }
     processor.mimeMessage.saveChanges();
-    return new EmailProcessorResult(processor.mimeMessage, processor.messageModified);
+    return new EmailProcessorResult(processor.mimeMessage, !processor.modifiedAttachmentParts.isEmpty());
   }
 
   @FunctionalInterface
@@ -181,12 +182,12 @@ public class EmailProcessor {
     }
   }
 
-  private void removeDetectedAttachmentParts() throws MessagingException, UnsupportedEncodingException {
+  private void processDetectedAttachmentParts() throws MessagingException, UnsupportedEncodingException {
     // If an attachment is the whole email body, replace it with an empty multipart alternative.
     if (processSettings.processOption().removeAttachments() && detectedAttachmentParts.size() == 1 &&
         detectedAttachmentParts.get(0) == mimeMessage) {
+      modifiedAttachmentParts.add(mimeMessage);
       mimeMessage = shallowCopy(mimeMessage);
-      messageModified = true;
       return;
     }
     for (Part part : detectedAttachmentParts) {
@@ -197,19 +198,24 @@ public class EmailProcessor {
           continue;
         }
         String fileExtension = FileUtils.getExtension(filename);
-        if (processSettings.processOption().reduceImageResolution() && isSupportedImageFormat(fileExtension)) {
+        if (processSettings.processOption().reduceImageResolution() && isSupportedImageExtension(fileExtension)) {
+          modifiedAttachmentParts.add(bodyPart);
           parent.removeBodyPart(bodyPart);
           insertImageWithReducedResolution(parent, part, filename, fileExtension);
-          messageModified = true;
         } else if (processSettings.processOption().removeAttachments()) {
+          modifiedAttachmentParts.add(bodyPart);
           parent.removeBodyPart(bodyPart);
-          messageModified = true;
         }
       }
     }
   }
 
-  public static boolean isSupportedImageFormat(String fileExtension) {
+  public static boolean isSupportedImageFilename(String filename) {
+    String fileExtension = FileUtils.getExtension(filename);
+    return isSupportedImageExtension(fileExtension);
+  }
+
+  public static boolean isSupportedImageExtension(String fileExtension) {
     final Set<String> SUPPORTED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "tiff", "tif");
     return SUPPORTED_IMAGE_EXTENSIONS.contains(fileExtension.toLowerCase());
   }
@@ -301,7 +307,7 @@ public class EmailProcessor {
   }
 
   private void addReferencesToContent() throws IOException, MessagingException {
-    if (detectedAttachmentParts.size() == 0) {
+    if (modifiedAttachmentParts.size() == 0) {
       return;
     }
     if (mainTextPart == null && mainHtmlPart == null) {
@@ -329,14 +335,14 @@ public class EmailProcessor {
     }
   }
 
-  private String generateTextSuffix(String text, String dateTimeString, String hostname) {
+  private String generateTextSuffix(String text, String dateTimeString, String hostname) throws MessagingException {
     StringBuilder newText = new StringBuilder(text);
     newText.append("\n\n\n");
     newText.append("=========================================\n");
     newText.append("Removed/modified attachments:\n");
-    for (Map.Entry<String, String> entry : originalToNormalizedFilename.entrySet()) {
-      String originalFilename = entry.getKey();
-      String normalizedFilename = entry.getValue();
+    for (Part modifiedAttachmentPart : modifiedAttachmentParts) {
+      String originalFilename = modifiedAttachmentPart.getFileName();
+      String normalizedFilename = originalToNormalizedFilename.get(originalFilename);
       newText.append(" - ");
       newText.append(resizedImageNames.contains(originalFilename) ? "resized" : "removed").append(" ");
       newText.append(originalFilename);
@@ -356,12 +362,12 @@ public class EmailProcessor {
     return newText.toString();
   }
 
-  private String generateHtmlSuffix(String html, String dateTimeString, String hostname) {
+  private String generateHtmlSuffix(String html, String dateTimeString, String hostname) throws MessagingException {
     StringBuilder suffix = new StringBuilder("<hr /><p>Removed/modified attachments:<ul>\n");
     String targetDirectoryAbsolutePath = processSettings.targetDirectory().getAbsolutePath();
-    for (Map.Entry<String, String> entry : originalToNormalizedFilename.entrySet()) {
-      String originalFilename = entry.getKey();
-      String normalizedFilename = entry.getValue();
+    for (Part modifiedAttachmentPart : modifiedAttachmentParts) {
+      String originalFilename = modifiedAttachmentPart.getFileName();
+      String normalizedFilename = originalToNormalizedFilename.get(originalFilename);
       suffix.append("<li>");
       suffix.append(resizedImageNames.contains(originalFilename) ? "resized" : "removed").append(" ");
       suffix.append(originalFilename);
