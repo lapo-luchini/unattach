@@ -1,0 +1,56 @@
+{
+  "historyId": "9400587",
+  "id": "17e0fec75d444a92",
+  "internalDate": "1640944660000",
+  "labelIds": [
+    "UNREAD",
+    "IMPORTANT",
+    "SENT",
+    "INBOX"
+  ],
+  "payload": {
+    "filename": "",
+    "headers": [
+      {
+        "name": "MIME-Version",
+        "value": "1.0"
+      },
+      {
+        "name": "Date",
+        "value": "Fri, 31 Dec 2021 10:57:40 +0100"
+      },
+      {
+        "name": "Message-ID",
+        "value": "<CAFCfwCqK3-DjYWG_4HjuQiq3YHMrzQwzZ1UEMvYceOBYPWCU9w@mail.gmail.com>"
+      },
+      {
+        "name": "Subject",
+        "value": "small image"
+      },
+      {
+        "name": "From",
+        "value": "\"Rok Strniša\" <rok.strnisa@gmail.com>"
+      },
+      {
+        "name": "To",
+        "value": "\"Rok Strniša\" <rok.strnisa@gmail.com>"
+      },
+      {
+        "name": "Content-Type",
+        "value": "multipart/mixed; boundary=\"000000000000a38e3905d46e33df\""
+      }
+    ],
+    "parts": [
+      {
+        "filename": ""
+      },
+      {
+        "filename": "small.bmp"
+      }
+    ]
+  },
+  "raw": "TUlNRS1WZXJzaW9uOiAxLjANCkRhdGU6IEZyaSwgMzEgRGVjIDIwMjEgMTA6NTc6NDAgKzAxMDANCk1lc3NhZ2UtSUQ6IDxDQUZDZndDcUszLURqWVdHXzRIanVRaXEzWUhNcnpRd3paMVVFTXZZY2VPQllQV0NVOXdAbWFpbC5nbWFpbC5jb20-DQpTdWJqZWN0OiBzbWFsbCBpbWFnZQ0KRnJvbTogPT9VVEYtOD9CP1VtOXJJRk4wY201cHhhRmg_PSA8cm9rLnN0cm5pc2FAZ21haWwuY29tPg0KVG86ID0_VVRGLTg_Qj9VbTlySUZOMGNtNXB4YUZoPz0gPHJvay5zdHJuaXNhQGdtYWlsLmNvbT4NCkNvbnRlbnQtVHlwZTogbXVsdGlwYXJ0L21peGVkOyBib3VuZGFyeT0iMDAwMDAwMDAwMDAwYTM4ZTM5MDVkNDZlMzNkZiINCg0KLS0wMDAwMDAwMDAwMDBhMzhlMzkwNWQ0NmUzM2RmDQpDb250ZW50LVR5cGU6IG11bHRpcGFydC9hbHRlcm5hdGl2ZTsgYm91bmRhcnk9IjAwMDAwMDAwMDAwMGEzOGUzNzA1ZDQ2ZTMzZGQiDQoNCi0tMDAwMDAwMDAwMDAwYTM4ZTM3MDVkNDZlMzNkZA0KQ29udGVudC1UeXBlOiB0ZXh0L3BsYWluOyBjaGFyc2V0PSJVVEYtOCINCg0KDQoNCi0tMDAwMDAwMDAwMDAwYTM4ZTM3MDVkNDZlMzNkZA0KQ29udGVudC1UeXBlOiB0ZXh0L2h0bWw7IGNoYXJzZXQ9IlVURi04Ig0KDQo8ZGl2IGRpcj0ibHRyIj48YnI-PC9kaXY-DQoNCi0tMDAwMDAwMDAwMDAwYTM4ZTM3MDVkNDZlMzNkZC0tDQotLTAwMDAwMDAwMDAwMGEzOGUzOTA1ZDQ2ZTMzZGYNCkNvbnRlbnQtVHlwZTogaW1hZ2UvYm1wOyBuYW1lPSJzbWFsbC5ibXAiDQpDb250ZW50LURpc3Bvc2l0aW9uOiBhdHRhY2htZW50OyBmaWxlbmFtZT0ic21hbGwuYm1wIg0KQ29udGVudC1UcmFuc2Zlci1FbmNvZGluZzogYmFzZTY0DQpYLUF0dGFjaG1lbnQtSWQ6IGZfa3h1ODJ4N3EwDQpDb250ZW50LUlEOiA8Zl9reHU4Mng3cTA-DQoNClFrMGVBQUFBQUFBQUFCb0FBQUFNQUFBQUFRQUJBQUVBR0FBQUFQOEENCi0tMDAwMDAwMDAwMDAwYTM4ZTM5MDVkNDZlMzNkZi0t",
+  "sizeEstimate": 984,
+  "snippet": "",
+  "threadId": "17e0fec445d8ef18"
+}

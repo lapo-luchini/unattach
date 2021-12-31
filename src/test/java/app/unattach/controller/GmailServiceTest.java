@@ -46,12 +46,15 @@ public class GmailServiceTest {
       Message mixedBefore = TestStore.loadMessage(factory, "2-mixed-before");
       Message noBodyBefore = TestStore.loadMessage(factory, "3-no-body-before");
       Message imageAndPdfBefore = TestStore.loadMessage(factory, "5-image-and-pdf");
-      List<Message> messages = Arrays.asList(simpleBefore, mixedBefore, noBodyBefore, imageAndPdfBefore);
+      Message smallImageBefore = TestStore.loadMessage(factory, "6-small-image");
+      List<Message> messages = Arrays.asList(simpleBefore, mixedBefore, noBodyBefore, imageAndPdfBefore,
+          smallImageBefore);
       Map<String, String> beforeIdToAfterId = Map.of(
           simpleBefore.getId(), "1-simple-after",
           mixedBefore.getId(), "2-mixed-after",
           noBodyBefore.getId(), "3-no-body-after",
-          imageAndPdfBefore.getId(), "5-image-and-pdf-after"
+          imageAndPdfBefore.getId(), "5-image-and-pdf-after",
+          smallImageBefore.getId(), "6-small-image-after"
       );
       GmailServiceManager gmailServiceManager =
           new FakeGmailServiceManager(emailAddress, idToLabel, messages, beforeIdToAfterId);
@@ -153,6 +156,16 @@ public class GmailServiceTest {
       throws GmailServiceException, LongTaskException, IOException, MessagingException {
     testDownloadAndOrRemove(tempDir, "image and pdf", true, false, true,
         true, "Google.pdf", "logo.png");
+  }
+
+  @Test
+  void test_getProcessTask_SHOULD_not_resize_image_WHEN_resizing_image_is_small(@TempDir Path tempDir)
+      throws GmailServiceException, LongTaskException {
+    Path firstRunPath = tempDir.resolve("first_run");
+    ProcessEmailResult result = processEmail(firstRunPath, "small image", true, true,
+        true, true);
+    // Check that email ID hasn't changed.
+    assertNull(result.newId());
   }
 
   private void testDownloadAndOrRemove(Path tempDir, String query, boolean download, boolean remove,

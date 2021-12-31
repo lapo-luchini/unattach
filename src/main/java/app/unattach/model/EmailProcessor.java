@@ -199,9 +199,10 @@ public class EmailProcessor {
         }
         String fileExtension = FileUtils.getExtension(filename);
         if (processSettings.processOption().reduceImageResolution() && isSupportedImageExtension(fileExtension)) {
-          modifiedAttachmentParts.add(bodyPart);
-          parent.removeBodyPart(bodyPart);
-          insertImageWithReducedResolution(parent, part, filename, fileExtension);
+          if (insertImageWithReducedResolution(parent, part, filename, fileExtension)) {
+            modifiedAttachmentParts.add(bodyPart);
+            parent.removeBodyPart(bodyPart);
+          }
         } else if (processSettings.processOption().removeAttachments()) {
           modifiedAttachmentParts.add(bodyPart);
           parent.removeBodyPart(bodyPart);
@@ -216,12 +217,11 @@ public class EmailProcessor {
   }
 
   public static boolean isSupportedImageExtension(String fileExtension) {
-    final Set<String> SUPPORTED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "tiff", "tif");
+    final Set<String> SUPPORTED_IMAGE_EXTENSIONS = Set.of("bmp", "gif", "jpg", "jpeg", "png", "tiff", "tif");
     return SUPPORTED_IMAGE_EXTENSIONS.contains(fileExtension.toLowerCase());
   }
 
-  private void insertImageWithReducedResolution(Multipart parent, Part part, String filename, String fileExtension)
-      throws MessagingException {
+  private boolean insertImageWithReducedResolution(Multipart parent, Part part, String filename, String fileExtension) {
     try {
       logger.info("Attempting to reduce the resolution of the image named %s...", filename);
       MimeBodyPart newPart = new MimeBodyPart();
@@ -232,7 +232,7 @@ public class EmailProcessor {
       final int maxTargetWidth = 500, maxTargetHeight = 500;
       if (currentImage.getWidth() <= maxTargetWidth || currentImage.getHeight() <= maxTargetHeight) {
         logger.info("The current image is already smaller than the target dimensions. Skipping.");
-        return;
+        return false;
       }
       BufferedImage resizedImage = Scalr.resize(currentImage, Scalr.Method.QUALITY, Scalr.Mode.AUTOMATIC,
           maxTargetWidth, maxTargetHeight, Scalr.OP_ANTIALIAS);
@@ -241,7 +241,7 @@ public class EmailProcessor {
       final int resizedImageSize = resizedImageOutputStream.size();
       if (resizedImageSize >= currentImageSize) {
         logger.info("The resized image is larger than the current image. Skipping.");
-        return;
+        return false;
       }
       logger.info("The size of the resized image is %d bytes.", resizedImageSize);
       ByteArrayInputStream resizedImageInputStream = new ByteArrayInputStream(resizedImageOutputStream.toByteArray());
@@ -255,8 +255,10 @@ public class EmailProcessor {
       newPart.setDisposition(part.getDisposition());
       parent.addBodyPart(newPart);
       resizedImageNames.add(filename);
-    } catch (IOException e) {
-      logger.error("Failed to reduce the resolution of an image.", e);
+      return true;
+    } catch (Throwable t) {
+      logger.error("Failed to reduce the resolution of an image: " + filename, t);
+      return false;
     }
   }
 
