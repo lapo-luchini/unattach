@@ -230,7 +230,7 @@ public class EmailProcessor {
       final int currentImageSize = currentImageInputStream.getCount();
       logger.info("The size of the current image is %d bytes.", currentImageSize);
       final int maxTargetWidth = 500, maxTargetHeight = 500;
-      if (currentImage.getWidth() <= maxTargetWidth || currentImage.getHeight() <= maxTargetHeight) {
+      if (currentImage.getWidth() <= maxTargetWidth && currentImage.getHeight() <= maxTargetHeight) {
         logger.info("The current image is already smaller than the target dimensions. Skipping.");
         return false;
       }
