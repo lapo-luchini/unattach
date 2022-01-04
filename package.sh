@@ -7,7 +7,8 @@ mvn clean package
 VERSION=3.4.0
 DESCRIPTION="Easily download and optionally remove Gmail attachments from many emails at once."
 VENDOR="Rok Strniša"
-COPYRIGHT="Copyright 2020, All rights reserved"
+YEAR=`date +"%Y"`
+COPYRIGHT="Copyright $YEAR, All rights reserved"
 MAIN_CLASS="app.unattach.Main"
 JAVA_OPTION="-Xmx2000m"
 JAR_PATH=$(ls target/*-with-dependencies.jar)
