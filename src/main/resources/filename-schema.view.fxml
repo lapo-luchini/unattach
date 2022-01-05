@@ -6,12 +6,14 @@
 <?import javafx.scene.text.Text?>
 <?import java.net.URL?>
 <VBox xmlns:fx="http://javafx.com/fxml" fx:controller="app.unattach.view.FilenameSchemaController"
-      alignment="CENTER" spacing="10" minWidth="600" minHeight="400">
+      alignment="CENTER" spacing="10" minWidth="720">
   <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
   <GridPane VBox.vgrow="ALWAYS" vgap="10" hgap="10">
-    <Text fx:id="introductionText" GridPane.columnSpan="2" />
+    <ScrollPane GridPane.columnSpan="2" maxHeight="300">
+      <Text fx:id="introductionText" />
+    </ScrollPane>
     <Label text="File name schema:" GridPane.rowIndex="1"/>
-    <TextField fx:id="filenameSchemaTextField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+    <TextField fx:id="filenameSchemaTextField" GridPane.rowIndex="1" GridPane.columnIndex="1" />
     <Label text="Example file name:" GridPane.rowIndex="2"/>
     <Label fx:id="filenameExampleLabel"  GridPane.rowIndex="2" GridPane.columnIndex="1"/>
     <Label fx:id="errorLabel" styleClass="danger-text" GridPane.rowIndex="3" GridPane.columnSpan="2"/>
