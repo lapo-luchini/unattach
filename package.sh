@@ -4,7 +4,7 @@ set -e -u -x -o pipefail
 
 mvn clean package
 
-VERSION=3.4.0
+VERSION=3.4.1
 DESCRIPTION="Easily download and optionally remove Gmail attachments from many emails at once."
 VENDOR="Rok Strniša"
 YEAR=`date +"%Y"`
