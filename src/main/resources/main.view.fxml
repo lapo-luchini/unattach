@@ -183,7 +183,7 @@
         <Region HBox.hgrow="ALWAYS"/>
         <CheckBox fx:id="backupEmailsCheckBox" text="Backup Email" onAction="#onBackupEmailCheckBoxChanged">
           <tooltip>
-            <Tooltip prefWidth="300" wrapText="true" showDuration="30s" text="Backup email (in EML format) to the specified directory before making any changes to it."/>
+            <Tooltip prefWidth="300" wrapText="true" showDuration="30s" text="Backup email (in EML format) to the specified directory as '<email-id>.eml'. If combined with other actions, this action is performed first."/>
           </tooltip>
         </CheckBox>
         <Region HBox.hgrow="ALWAYS"/>
