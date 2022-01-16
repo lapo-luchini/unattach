@@ -1,6 +1,7 @@
 package app.unattach.model;
 
 import app.unattach.model.attachmentstorage.UserStorage;
+import app.unattach.utils.FilenameDecoder;
 import app.unattach.utils.InputStreamDataSource;
 import app.unattach.utils.Logger;
 import org.apache.commons.io.input.CountingInputStream;
@@ -15,7 +16,6 @@ import javax.mail.*;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeUtility;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.InetAddress;
@@ -135,7 +135,7 @@ public class EmailProcessor {
       return false;
     }
     String contentType = part.getContentType();
-    String originalFilename = getFilename(part);
+    String originalFilename = FilenameDecoder.getFilename(part);
     if (originalFilename == null && "message/rfc822".equals(contentType)) {
       originalFilename = "inner_email_" + fileCounter + ".eml";
     }
@@ -143,7 +143,6 @@ public class EmailProcessor {
       return true;
     }
     detectedAttachmentParts.add(part);
-
     String normalizedFilename = filenameFactory.getFilename(email, fileCounter++, originalFilename);
     originalToNormalizedFilename.put(originalFilename, normalizedFilename);
     if (processSettings.processOption().downloadAttachments()) {
@@ -165,24 +164,7 @@ public class EmailProcessor {
         && filename != null;
   }
 
-  private String getFilename(Part part) throws MessagingException, UnsupportedEncodingException {
-    String rawFilename = part.getFileName();
-    if (rawFilename == null) {
-      return null;
-    }
-    try {
-      return MimeUtility.decodeText(rawFilename).trim();
-    } catch (UnsupportedEncodingException e) {
-      if (rawFilename.contains("iso-8859-8-i")) {
-        rawFilename = rawFilename.replace("iso-8859-8-i", "iso-8859-8");
-        return MimeUtility.decodeText(rawFilename).trim();
-      }
-      logger.error("Failed to decode the attachment filename: %s", e.getMessage());
-      return null;
-    }
-  }
-
-  private void processDetectedAttachmentParts() throws MessagingException, UnsupportedEncodingException {
+  private void processDetectedAttachmentParts() throws MessagingException {
     // If an attachment is the whole email body, replace it with an empty multipart alternative.
     if (processSettings.processOption().removeAttachments() && detectedAttachmentParts.size() == 1 &&
         detectedAttachmentParts.get(0) == mimeMessage) {
@@ -193,7 +175,7 @@ public class EmailProcessor {
     for (Part part : detectedAttachmentParts) {
       if (part instanceof BodyPart bodyPart) {
         Multipart parent = bodyPart.getParent();
-        String filename = getFilename(part);
+        String filename = FilenameDecoder.getFilename(part);
         if (filename == null) {
           continue;
         }
@@ -246,6 +228,7 @@ public class EmailProcessor {
       logger.info("The size of the resized image is %d bytes.", resizedImageSize);
       ByteArrayInputStream resizedImageInputStream = new ByteArrayInputStream(resizedImageOutputStream.toByteArray());
       newPart.setDataHandler(new DataHandler(new InputStreamDataSource(resizedImageInputStream)));
+      // No encoding or decoding. Simply set to what it was before.
       newPart.setFileName(part.getFileName());
       Enumeration<Header> headers = part.getAllHeaders();
       while (headers.hasMoreElements()) {
@@ -343,7 +326,7 @@ public class EmailProcessor {
     newText.append("=========================================\n");
     newText.append("Removed/modified attachments:\n");
     for (Part modifiedAttachmentPart : modifiedAttachmentParts) {
-      String originalFilename = modifiedAttachmentPart.getFileName();
+      String originalFilename = FilenameDecoder.getFilename(modifiedAttachmentPart);
       String normalizedFilename = originalToNormalizedFilename.get(originalFilename);
       newText.append(" - ");
       newText.append(resizedImageNames.contains(originalFilename) ? "resized" : "removed").append(" ");
@@ -368,7 +351,7 @@ public class EmailProcessor {
     StringBuilder suffix = new StringBuilder("<hr /><p>Removed/modified attachments:<ul>\n");
     String targetDirectoryAbsolutePath = processSettings.targetDirectory().getAbsolutePath();
     for (Part modifiedAttachmentPart : modifiedAttachmentParts) {
-      String originalFilename = modifiedAttachmentPart.getFileName();
+      String originalFilename = FilenameDecoder.getFilename(modifiedAttachmentPart);
       String normalizedFilename = originalToNormalizedFilename.get(originalFilename);
       suffix.append("<li>");
       suffix.append(resizedImageNames.contains(originalFilename) ? "resized" : "removed").append(" ");
