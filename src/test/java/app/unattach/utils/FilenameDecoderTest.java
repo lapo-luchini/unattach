@@ -7,7 +7,7 @@ import java.io.UnsupportedEncodingException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class FilenameDecoderTest {
+public class FilenameDecoderTest {
   @Test
   void decode_SHOULD_the_same_WHEN_no_special_characters() {
     String encodedFilename = "test";

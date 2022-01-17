@@ -2,4 +2,4 @@
 
 set -e -u -x -o pipefail
 
-mvn test
+mvn clean test

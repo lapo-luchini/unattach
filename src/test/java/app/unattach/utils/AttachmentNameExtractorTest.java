@@ -11,7 +11,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class AttachmentNameExtractorTest {
+public class AttachmentNameExtractorTest {
   @Test
   void test_getAttachmentNames_SHOULD_extract_all_names_WHEN_there_are_sub_parts() throws IOException {
     JsonFactory factory = GsonFactory.getDefaultInstance();
