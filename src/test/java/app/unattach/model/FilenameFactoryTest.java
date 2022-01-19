@@ -30,13 +30,13 @@ public class FilenameFactoryTest {
 
   @Test
   public void testFromName() {
-    testGetFilename("${FROM_NAME}", "a%b@.jpg", "Rok_Strni_a");
+    testGetFilename("${FROM_NAME}", "a%b@.jpg", "Rok Strniša");
     testGetFilename("${FROM_NAME:3}", "a%b@.jpg", "Rok");
   }
 
   @Test
   public void testFromNameOrEmail() {
-    testGetFilename("${FROM_NAME_OR_EMAIL}", "a%b@.jpg", "Rok_Strni_a");
+    testGetFilename("${FROM_NAME_OR_EMAIL}", "a%b@.jpg", "Rok Strniša");
     testGetFilename("${FROM_NAME_OR_EMAIL:3}", "a%b@.jpg", "Rok");
     email = createEmail("rok.strnisa@gmail.com");
     testGetFilename("${FROM_NAME_OR_EMAIL}", "a%b@.jpg", "rok.strnisa@gmail.com");
@@ -90,17 +90,17 @@ public class FilenameFactoryTest {
 
   @Test
   public void testNormalizedAttachmentName() {
-    testGetFilename("${ATTACHMENT_NAME}", "a:b~.jpg", "a_b_.jpg");
-    testGetFilename("${ATTACHMENT_NAME:3}", "a%b~", "a_b");
-    testGetFilename("${ATTACHMENT_NAME:6}", "a%b~.jpg", "a_.jpg");
+    testGetFilename("${ATTACHMENT_NAME}", "a:b~.jpg", "a.b~.jpg");
+    testGetFilename("${ATTACHMENT_NAME:3}", "a%b~", "a%b");
+    testGetFilename("${ATTACHMENT_NAME:6}", "a%b~.jpg", "a%.jpg");
     testGetFilename("${ATTACHMENT_NAME:-2}", "a%b~.jpg", "pg");
   }
 
   @Test
   public void testNormalizedAttachmentBase() {
-    testGetFilename("${ATTACHMENT_BASE}", "a:b~.jpg", "a_b_");
-    testGetFilename("${ATTACHMENT_BASE:2}", "a%b~", "a_");
-    testGetFilename("${ATTACHMENT_BASE:5}", "a%b~.jpg", "a_b_");
+    testGetFilename("${ATTACHMENT_BASE}", "a:b~.jpg", "a.b~");
+    testGetFilename("${ATTACHMENT_BASE:2}", "a%b~", "a%");
+    testGetFilename("${ATTACHMENT_BASE:5}", "a%b~.jpg", "a%b~");
   }
 
   @Test
@@ -111,6 +111,13 @@ public class FilenameFactoryTest {
   }
 
   @Test
+  public void testSpecialCharacters() {
+    testGetFilename("${ATTACHMENT_NAME}",
+        "<(*Öptions*)>: \"one\", \\'二'/-/_ & |three?.jpg",
+        "_(_Öptions_)_. 'one', ,'二',-,_ & ,three..jpg");
+  }
+
+    @Test
   public void testLabels() {
     testGetFilename("${LABELS}", "a%b@.jpg", "LABEL_42_IMPORTANT_LABEL_13");
   }
@@ -118,12 +125,12 @@ public class FilenameFactoryTest {
   @Test
   public void testLabelNames() {
     testGetFilename("${LABEL_NAMES}", "a%b@.jpg",
-        "Friends__Files__IMPORTANT__Unattach_-_Downloaded");
+        "Friends' Files, IMPORTANT, Unattach - Downloaded");
   }
 
   @Test
   public void testCustomLabelNames() {
-    testGetFilename("${CUSTOM_LABEL_NAMES}", "a%b@.jpg", "Friends__Files");
+    testGetFilename("${CUSTOM_LABEL_NAMES}", "a%b@.jpg", "Friends' Files");
   }
 
   @Test
