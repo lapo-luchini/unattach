@@ -113,7 +113,15 @@ public class FilenameFactory {
   }
 
   private static String normalise(String filename) {
-    return filename.replaceAll("[^a-zA-Z0-9-_.@]", "_");
+    // Replace : and ? with ..
+    filename = filename.replaceAll("[\\?:]", ".");
+    // Replace " with '.
+    filename = filename.replaceAll("[\"]", "'");
+    // Replace \, / and | with ,.
+    filename = filename.replaceAll("[\\\\/|]", ",");
+    // Replace <, > and * with _.
+    filename = filename.replaceAll("[<>*]", "_");
+    return filename;
   }
 
   private static String simpleTrim(String replacement, @SuppressWarnings("unused") int maxLength, int newLength) {
