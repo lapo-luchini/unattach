@@ -209,6 +209,10 @@ public class EmailProcessor {
       MimeBodyPart newPart = new MimeBodyPart();
       CountingInputStream currentImageInputStream = new CountingInputStream(part.getInputStream());
       BufferedImage currentImage = ImageIO.read(currentImageInputStream);
+      if (currentImage == null) {
+        logger.info("Failed to read the image. Skipping.");
+        return false;
+      }
       final int currentImageSize = currentImageInputStream.getCount();
       logger.info("The size of the current image is %d bytes.", currentImageSize);
       final int maxTargetWidth = 500, maxTargetHeight = 500;
