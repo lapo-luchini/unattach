@@ -93,7 +93,9 @@ public class Email implements Observable {
   }
 
   String getFromName() {
-    if (from.endsWith(">")) {
+    if (from == null) {
+      return "";
+    } else if (from.endsWith(">")) {
       return StringUtils.strip(from.substring(0, from.lastIndexOf('<')), " \"");
     } else {
       return "";

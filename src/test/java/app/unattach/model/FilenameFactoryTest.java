@@ -32,6 +32,8 @@ public class FilenameFactoryTest {
   public void testFromName() {
     testGetFilename("${FROM_NAME}", "a%b@.jpg", "Rok Strniša");
     testGetFilename("${FROM_NAME:3}", "a%b@.jpg", "Rok");
+    email = createEmail(null);
+    testGetFilename("${FROM_NAME}", "a%b@.jpg", "");
   }
 
   @Test
