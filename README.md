@@ -14,7 +14,7 @@ See [homepage](https://unattach.app/) for more info.
 
 ## Build & Run
 * Build with `mvn clean package`.
-* Run with `java -jar target/client-3.4.1-jar-with-dependencies.jar`.
+* Run with `java -jar target/client-3.4.2-jar-with-dependencies.jar`.
 
 ## Known Limitations
 * On some emails, the app will fail with `OutOfMemoryError` even with the maximum heap size set to 2GB. This occurs

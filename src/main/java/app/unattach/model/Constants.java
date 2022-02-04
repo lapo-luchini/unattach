@@ -14,6 +14,6 @@ public final class Constants {
   public static final String DONATE_URL = HOMEPAGE + "/?action=buy_coffee";
   public static final String DEMO_VIDEO_URL = "https://unattach.app/demo-video";
   public static final String PRODUCT_NAME = "Unattach";
-  public static final String VERSION = "3.4.1";
+  public static final String VERSION = "3.4.2";
   public static final boolean DEBUG_MODE = false;
 }
