@@ -26,7 +26,6 @@ public interface GmailService {
   void removeMessage(String messageId, boolean permanentlyRemove) throws GmailServiceException;
   String getEmailAddress() throws GmailServiceException;
   SortedMap<String, String> getIdToLabel() throws GmailServiceException;
-  Message getUniqueIdAndHeaders(String messageId) throws GmailServiceException;
   Message getRawMessage(String messageId) throws GmailServiceException;
   Message insertMessage(Message message) throws GmailServiceException;
   List<Message> search(String query) throws GmailServiceException;

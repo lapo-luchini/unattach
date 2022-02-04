@@ -80,11 +80,6 @@ public class FakeGmailService implements GmailService {
   }
 
   @Override
-  public Message getUniqueIdAndHeaders(String messageId) throws GmailServiceException {
-    return filterKeys(idToMessage.get(messageId), "id", "payload");
-  }
-
-  @Override
   public Message getRawMessage(String messageId) throws GmailServiceException {
     return filterKeys(idToMessage.get(messageId),
         "historyId", "id", "internalDate", "raw", "sizeEstimate", "snippet", "threadId");

@@ -97,16 +97,6 @@ public record LiveGmailService(Clock clock, Gmail gmail) implements GmailService
   }
 
   @Override
-  public Message getUniqueIdAndHeaders(String messageId) throws GmailServiceException {
-    try {
-      // 1 messages.get == 5 quota units
-      return gmail.users().messages().get(USER, messageId).setFields("id,payload/headers").execute();
-    } catch (IOException e) {
-      throw new GmailServiceException(e);
-    }
-  }
-
-  @Override
   public Message getRawMessage(String messageId) throws GmailServiceException {
     try {
       // 1 messages.get == 5 quota units
