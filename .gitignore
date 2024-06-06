@@ -23,3 +23,6 @@ unattach.log*
 tmp
 *.zip
 Unattach.app
+
+apache-maven-3.9.7/
+target_old_backup/

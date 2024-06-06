@@ -72,12 +72,15 @@ public class LiveGmailServiceManager implements GmailServiceManager {
     //noinspection ConstantConditions
     try (InputStreamReader reader = new InputStreamReader(getClass().getResourceAsStream("/credentials.json"))) {
       GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, reader);
-      GoogleAuthorizationCodeFlow flow =
-          new GoogleAuthorizationCodeFlow.Builder(
-              httpTransport, JSON_FACTORY, clientSecrets, SCOPES)
-              .setDataStoreFactory(dataStoreFactory)
-              .setAccessType("offline")
-              .build();
+
+      // DANGEROUS! Do not print the clientSecrets object.
+      // System.out.println(clientSecrets);
+
+      GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+          httpTransport, JSON_FACTORY, clientSecrets, SCOPES)
+          .setDataStoreFactory(dataStoreFactory)
+          .setAccessType("offline")
+          .build();
       return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize("user");
     }
   }
